@@ -58,7 +58,7 @@ build_script:
     - cmd: msbuild %build%\OpenMW.sln /t:Build /p:Configuration=%configuration% /m:2 /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
 after_build:
-    - cmd: if %PLATFORM%==x64 7z a OpenMW_MSVC%msvc%_%platform%_%appveyor_pull_request_number%_%appveyor_pull_request_head_commit%.zip %APPVEYOR_BUILD_FOLDER%\MSVC%msvc%_64\%configuration%\ -xr"!*.pdb"
+    - cmd: if %PLATFORM%==x64 7z a OpenMW_MSVC%msvc%_x64.zip %APPVEYOR_BUILD_FOLDER%\MSVC%msvc%_64\%configuration%\ -xr"!*.pdb"
     #- cmd: if %PLATFORM%==x64 7z a OpenMW_MSVC%msvc%_%platform%_%appveyor_pull_request_number%_%appveyor_pull_request_head_commit%_pdb.zip %APPVEYOR_BUILD_FOLDER%\MSVC%msvc%_64\%configuration%\*.pdb
 
 test: off
@@ -71,7 +71,7 @@ test: off
 #    on_build_status_changed: true
 
 artifacts:
-  - path: OpenMW_MSVC%msvc%_%platform%_%appveyor_pull_request_number%_%appveyor_pull_request_head_commit%.zip
-    name: OpenMW_MSVC%msvc%_%platform%_%appveyor_pull_request_number%_%appveyor_pull_request_head_commit%
+  - path: OpenMW_MSVC%msvc%_x64.zip
+    name: OpenMW_MSVC%msvc%_x64
   #- path: OpenMW_MSVC%msvc%_%platform%_%appveyor_pull_request_number%_%appveyor_pull_request_head_commit%_pdb.zip
   #  name: OpenMW_MSVC%msvc%_%platform%_%appveyor_pull_request_number%_%appveyor_pull_request_head_commit%_pdb
