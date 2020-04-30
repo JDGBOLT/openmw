@@ -27,9 +27,9 @@ namespace MWRender
         ObjectPaging(Resource::SceneManager* sceneManager);
         ~ObjectPaging() = default;
 
-        osg::ref_ptr<osg::Node> getChunk(float size, const osg::Vec2f& center, unsigned char lod, unsigned int lodFlags, bool far, const osg::Vec3f& viewPoint) override;
+        osg::ref_ptr<osg::Node> getChunk(float size, const osg::Vec2f& center, unsigned char lod, unsigned int lodFlags, bool far, const osg::Vec3f& viewPoint, bool compile) override;
 
-        osg::ref_ptr<osg::Node> createChunk(float size, const osg::Vec2f& center, const osg::Vec3f& viewPoint);
+        osg::ref_ptr<osg::Node> createChunk(float size, const osg::Vec2f& center, const osg::Vec3f& viewPoint, bool compile);
 
         virtual void setExpiryDelay(double expiryDelay) override { mExpiryDelay = 0.5f; }
 
@@ -38,7 +38,7 @@ namespace MWRender
 
     private:
         Resource::SceneManager* mSceneManager;
-        bool mMergeGeometry;
+        float mMergeFactor;
         float mMinSize;
 
         OpenThreads::ReadWriteMutex mDisabledMutex;
