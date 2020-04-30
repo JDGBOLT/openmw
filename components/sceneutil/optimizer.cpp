@@ -18,6 +18,7 @@
 
 #include "optimizer.hpp"
 
+#include <osg/Version>
 #include <osg/Transform>
 #include <osg/MatrixTransform>
 #include <osg/PositionAttitudeTransform>
@@ -587,13 +588,22 @@ void Optimizer::FlattenStaticTransformsVisitor::apply(osg::Node& node)
     traverse(node);
 }
 
-osg::Array* cloneArray(osg::Array* array, osg::VertexBufferObject*& vbo)
+bool needvbo(osg::Geometry* geom)
 {
-    if (array->referenceCount() <= 1)
-        return array;
+#if OSG_MIN_VERSION_REQUIRED(3,5,6)
+    return true;
+#else
+    return geom->getUseVertexBufferObjects();
+#endif
+}
+
+osg::Array* cloneArray(osg::Array* array, osg::VertexBufferObject*& vbo, osg::Geometry* geom)
+{
     array = osg::clone(array, osg::CopyOp::DEEP_COPY_ALL);
-    if (!vbo) vbo = new osg::VertexBufferObject; // must assign a new vbo to prevent race conditions
-    array->setVertexBufferObject(vbo);
+    if (!vbo && needvbo(geom))
+        vbo = new osg::VertexBufferObject;
+    if (vbo)
+        array->setVertexBufferObject(vbo);
     return array;
 }
 
@@ -604,10 +614,10 @@ void Optimizer::FlattenStaticTransformsVisitor::apply(osg::Drawable& drawable)
     {
         osg::VertexBufferObject* vbo = nullptr;
         if(geometry->getVertexArray() && geometry->getVertexArray()->referenceCount() > 1) {
-            geometry->setVertexArray(cloneArray(geometry->getVertexArray(), vbo));
+            geometry->setVertexArray(cloneArray(geometry->getVertexArray(), vbo, geometry));
         }
         if(geometry->getNormalArray() && geometry->getNormalArray()->referenceCount() > 1) {
-            geometry->setNormalArray(cloneArray(geometry->getNormalArray(), vbo));
+            geometry->setNormalArray(cloneArray(geometry->getNormalArray(), vbo, geometry));
         }
     }
     _drawableSet.insert(&drawable);
@@ -1131,17 +1141,20 @@ void Optimizer::MergeGeometryVisitor::apply(osg::Group &group)
         popStateSet();
 }
 
-osg::PrimitiveSet* clonePrimitive(osg::PrimitiveSet* ps, osg::ElementBufferObject*& ebo)
+osg::PrimitiveSet* clonePrimitive(osg::PrimitiveSet* ps, osg::ElementBufferObject*& ebo, osg::Geometry* geom)
 {
     if (ps->referenceCount() <= 1)
         return ps;
     ps = osg::clone(ps, osg::CopyOp::DEEP_COPY_ALL);
+
     osg::DrawElements* drawElements = ps->getDrawElements();
-    if (drawElements)
-    {
-        if (!ebo) ebo = new osg::ElementBufferObject;
-        drawElements->setElementBufferObject(ebo); // must assign a new ebo to prevent race conditions
-    }
+    if (!drawElements) return ps;
+
+    if (!ebo && needvbo(geom))
+        ebo = new osg::ElementBufferObject;
+    if (ebo)
+        drawElements->setElementBufferObject(ebo);
+
     return ps;
 }
 
@@ -1345,12 +1358,12 @@ bool Optimizer::MergeGeometryVisitor::mergeGroup(osg::Group& group)
                 {
                     if (prim->getNumIndices()==3)
                     {
-                        prim = clonePrimitive(prim, ebo); (*itr) = prim;
+                        prim = clonePrimitive(prim, ebo, geom); (*itr) = prim;
                         prim->setMode(osg::PrimitiveSet::TRIANGLES);
                     }
                     else if (prim->getNumIndices()==4)
                     {
-                        prim = clonePrimitive(prim, ebo); (*itr) = prim;
+                        prim = clonePrimitive(prim, ebo, geom); (*itr) = prim;
                         prim->setMode(osg::PrimitiveSet::QUADS);
                     }
                 }
@@ -1408,7 +1421,7 @@ bool Optimizer::MergeGeometryVisitor::mergeGroup(osg::Group& group)
 
                     if (combine)
                     {
-                        lhs = clonePrimitive(lhs, ebo);
+                        lhs = clonePrimitive(lhs, ebo, geom);
                         primitives[lhsNo] = lhs;
 
                         switch(lhs->getType())
@@ -1613,7 +1626,8 @@ bool Optimizer::MergeGeometryVisitor::mergeGeometry(osg::Geometry& lhs,osg::Geom
     if (lhs.getVertexArray() && rhs.getVertexArray())
     {
         base = lhs.getVertexArray()->getNumElements();
-        lhs.setVertexArray(cloneArray(lhs.getVertexArray(), vbo));
+        if (lhs.getVertexArray()->referenceCount() > 1)
+            lhs.setVertexArray(cloneArray(lhs.getVertexArray(), vbo, &lhs));
         if (!merger.merge(lhs.getVertexArray(),rhs.getVertexArray()))
         {
             OSG_DEBUG << "MergeGeometry: vertex array not merged. Some data may be lost." <<std::endl;
@@ -1628,7 +1642,8 @@ bool Optimizer::MergeGeometryVisitor::mergeGeometry(osg::Geometry& lhs,osg::Geom
 
     if (lhs.getNormalArray() && rhs.getNormalArray() && lhs.getNormalArray()->getBinding()!=osg::Array::BIND_OVERALL)
     {
-        lhs.setNormalArray(cloneArray(lhs.getNormalArray(), vbo));
+        if (lhs.getNormalArray()->referenceCount() > 1)
+            lhs.setNormalArray(cloneArray(lhs.getNormalArray(), vbo, &lhs));
         if (!merger.merge(lhs.getNormalArray(),rhs.getNormalArray()))
         {
             OSG_DEBUG << "MergeGeometry: normal array not merged. Some data may be lost." <<std::endl;
@@ -1642,7 +1657,8 @@ bool Optimizer::MergeGeometryVisitor::mergeGeometry(osg::Geometry& lhs,osg::Geom
 
     if (lhs.getColorArray() && rhs.getColorArray() && lhs.getColorArray()->getBinding()!=osg::Array::BIND_OVERALL)
     {
-        lhs.setColorArray(cloneArray(lhs.getColorArray(), vbo));
+        if (lhs.getColorArray()->referenceCount() > 1)
+            lhs.setColorArray(cloneArray(lhs.getColorArray(), vbo, &lhs));
         if (!merger.merge(lhs.getColorArray(),rhs.getColorArray()))
         {
             OSG_DEBUG << "MergeGeometry: color array not merged. Some data may be lost." <<std::endl;
@@ -1655,7 +1671,8 @@ bool Optimizer::MergeGeometryVisitor::mergeGeometry(osg::Geometry& lhs,osg::Geom
 
     if (lhs.getSecondaryColorArray() && rhs.getSecondaryColorArray() && lhs.getSecondaryColorArray()->getBinding()!=osg::Array::BIND_OVERALL)
     {
-        lhs.setSecondaryColorArray(cloneArray(lhs.getSecondaryColorArray(), vbo));
+        if (lhs.getSecondaryColorArray()->referenceCount() > 1)
+            lhs.setSecondaryColorArray(cloneArray(lhs.getSecondaryColorArray(), vbo, &lhs));
         if (!merger.merge(lhs.getSecondaryColorArray(),rhs.getSecondaryColorArray()))
         {
             OSG_DEBUG << "MergeGeometry: secondary color array not merged. Some data may be lost." <<std::endl;
@@ -1668,7 +1685,8 @@ bool Optimizer::MergeGeometryVisitor::mergeGeometry(osg::Geometry& lhs,osg::Geom
 
     if (lhs.getFogCoordArray() && rhs.getFogCoordArray() && lhs.getFogCoordArray()->getBinding()!=osg::Array::BIND_OVERALL)
     {
-        lhs.setFogCoordArray(cloneArray(lhs.getFogCoordArray(), vbo));
+        if (lhs.getFogCoordArray()->referenceCount() > 1)
+            lhs.setFogCoordArray(cloneArray(lhs.getFogCoordArray(), vbo, &lhs));
         if (!merger.merge(lhs.getFogCoordArray(),rhs.getFogCoordArray()))
         {
             OSG_DEBUG << "MergeGeometry: fog coord array not merged. Some data may be lost." <<std::endl;
@@ -1684,7 +1702,8 @@ bool Optimizer::MergeGeometryVisitor::mergeGeometry(osg::Geometry& lhs,osg::Geom
     for(unit=0;unit<lhs.getNumTexCoordArrays();++unit)
     {
         if (!lhs.getTexCoordArray(unit)) continue;
-        lhs.setTexCoordArray(unit, cloneArray(lhs.getTexCoordArray(unit), vbo));
+        if (lhs.getTexCoordArray(unit)->referenceCount() > 1)
+            lhs.setTexCoordArray(unit, cloneArray(lhs.getTexCoordArray(unit), vbo, &lhs));
         if (!merger.merge(lhs.getTexCoordArray(unit),rhs.getTexCoordArray(unit)))
         {
             OSG_DEBUG << "MergeGeometry: tex coord array not merged. Some data may be lost." <<std::endl;
@@ -1694,7 +1713,8 @@ bool Optimizer::MergeGeometryVisitor::mergeGeometry(osg::Geometry& lhs,osg::Geom
     for(unit=0;unit<lhs.getNumVertexAttribArrays();++unit)
     {
         if (!lhs.getVertexAttribArray(unit)) continue;
-        lhs.setVertexAttribArray(unit, cloneArray(lhs.getVertexAttribArray(unit), vbo));
+        if (lhs.getVertexAttribArray(unit)->referenceCount() > 1)
+            lhs.setVertexAttribArray(unit, cloneArray(lhs.getVertexAttribArray(unit), vbo, &lhs));
         if (!merger.merge(lhs.getVertexAttribArray(unit),rhs.getVertexAttribArray(unit)))
         {
             OSG_DEBUG << "MergeGeometry: vertex attrib array not merged. Some data may be lost." <<std::endl;
@@ -1724,8 +1744,11 @@ bool Optimizer::MergeGeometryVisitor::mergeGeometry(osg::Geometry& lhs,osg::Geom
                 {
                     // must promote to a DrawElementsUInt
                     osg::DrawElementsUInt* new_primitive = new osg::DrawElementsUInt(primitive->getMode());
-                    if (!ebo) ebo = new osg::ElementBufferObject;
-                    new_primitive->setElementBufferObject(ebo);
+                    if (needvbo(&lhs))
+                    {
+                        if (!ebo) ebo = new osg::ElementBufferObject;
+                         new_primitive->setElementBufferObject(ebo);
+                    }
                     std::copy(primitiveUByte->begin(),primitiveUByte->end(),std::back_inserter(*new_primitive));
                     new_primitive->offsetIndices(base);
                     (*primItr) = new_primitive;
@@ -1733,15 +1756,18 @@ bool Optimizer::MergeGeometryVisitor::mergeGeometry(osg::Geometry& lhs,osg::Geom
                 {
                     // must promote to a DrawElementsUShort
                     osg::DrawElementsUShort* new_primitive = new osg::DrawElementsUShort(primitive->getMode());
-                    if (!ebo) ebo = new osg::ElementBufferObject;
-                    new_primitive->setElementBufferObject(ebo);
+                    if (needvbo(&lhs))
+                    {
+                        if (!ebo) ebo = new osg::ElementBufferObject;
+                         new_primitive->setElementBufferObject(ebo);
+                    }
                     std::copy(primitiveUByte->begin(),primitiveUByte->end(),std::back_inserter(*new_primitive));
                     new_primitive->offsetIndices(base);
                     (*primItr) = new_primitive;
                 }
                 else
                 {
-                    (*primItr) = clonePrimitive(primitive, ebo);
+                    (*primItr) = clonePrimitive(primitive, ebo, &lhs);
                     (*primItr)->offsetIndices(base);
                 }
             }
@@ -1761,15 +1787,18 @@ bool Optimizer::MergeGeometryVisitor::mergeGeometry(osg::Geometry& lhs,osg::Geom
                 {
                     // must promote to a DrawElementsUInt
                     osg::DrawElementsUInt* new_primitive = new osg::DrawElementsUInt(primitive->getMode());
-                    if (!ebo) ebo = new osg::ElementBufferObject;
-                    new_primitive->setElementBufferObject(ebo);
+                    if (needvbo(&lhs))
+                    {
+                        if (!ebo) ebo = new osg::ElementBufferObject;
+                         new_primitive->setElementBufferObject(ebo);
+                    }
                     std::copy(primitiveUShort->begin(),primitiveUShort->end(),std::back_inserter(*new_primitive));
                     new_primitive->offsetIndices(base);
                     (*primItr) = new_primitive;
                 }
                 else
                 {
-                    (*primItr) = clonePrimitive(primitive, ebo);
+                    (*primItr) = clonePrimitive(primitive, ebo, &lhs);
                     (*primItr)->offsetIndices(base);
                 }
             }
@@ -1779,7 +1808,7 @@ bool Optimizer::MergeGeometryVisitor::mergeGeometry(osg::Geometry& lhs,osg::Geom
         case(osg::PrimitiveSet::DrawArrayLengthsPrimitiveType):
         case(osg::PrimitiveSet::DrawElementsUIntPrimitiveType):
         default:
-            (*primItr) = clonePrimitive(primitive, ebo);
+            (*primItr) = clonePrimitive(primitive, ebo, &lhs);
             (*primItr)->offsetIndices(base);
             break;
         }
@@ -1792,6 +1821,13 @@ bool Optimizer::MergeGeometryVisitor::mergeGeometry(osg::Geometry& lhs,osg::Geom
 
     lhs.dirtyBound();
     lhs.dirtyDisplayList();
+
+    if (!lhs.containsSharedArrays())
+    {
+        // prefer to use vbo for merged geometries as vbo uses less memory than display lists.
+        lhs.setUseVertexBufferObjects(true);
+        lhs.setUseDisplayList(false);
+    }
 
     return true;
 }

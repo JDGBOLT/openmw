@@ -16,7 +16,6 @@
 
 #include <osgParticle/ParticleProcessor>
 #include <osgParticle/ParticleSystemUpdater>
-#include <osgParticle/Emitter>
 
 #include <components/sceneutil/morphgeometry.hpp>
 #include <components/sceneutil/riggeometry.hpp>
@@ -154,8 +153,6 @@ namespace MWRender
                 d->setDataVariance(osg::Object::STATIC);
                 d->setUserDataContainer(nullptr);
                 d->setName("");
-                d->setUseVertexBufferObjects(true);
-                d->setUseDisplayList(false);
                 return d;
             }
             else
