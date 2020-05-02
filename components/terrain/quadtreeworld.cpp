@@ -419,6 +419,7 @@ void QuadTreeWorld::accept(osg::NodeVisitor &nv)
     {
         static ViewData sIntersectionViewData;
         vd = &sIntersectionViewData;
+        vd->clear(); // we can't reuse intersection views in the next frame because they only contain what is touched by the intersection ray.
     }
 
     if (needsUpdate)
@@ -475,9 +476,6 @@ void QuadTreeWorld::accept(osg::NodeVisitor &nv)
 
     if (isCullVisitor)
         updateWaterCullingView(mHeightCullCallback, vd, static_cast<osgUtil::CullVisitor*>(&nv), mStorage->getCellWorldSize(), !isGridEmpty());
-
-    if (!isCullVisitor)
-        vd->clear(); // we can't reuse intersection views in the next frame because they only contain what is touched by the intersection ray.
 
     vd->markUnchanged();
 
