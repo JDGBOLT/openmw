@@ -4,7 +4,7 @@
     uniform float maximumShadowMapDistance;
     uniform float shadowFadeStart;
     @foreach shadow_texture_unit_index @shadow_texture_unit_list
-        uniform sampler2DShadow shadowTexture@shadow_texture_unit_index;
+        uniform sampler2D shadowTexture@shadow_texture_unit_index;
         varying vec4 shadowSpaceCoords@shadow_texture_unit_index;
 
 #if @perspectiveShadowMaps
@@ -12,6 +12,89 @@
 #endif
     @endforeach
 #endif // SHADOWS
+
+#if SHADOWS
+const float lightSizeFactor = 0.05;
+const float nearPlane = 0.4;
+const float maxSearchDistance = 0.01;
+const float minFilterRadius = 0.0001;
+const float maxFilterRadius = 0.003;
+const int poissonSamples = 25;
+
+const vec2 poissonDisk[poissonSamples] = vec2[](
+    vec2(0.513658, -0.361747),
+    vec2(0.7941055, -0.5156633),
+    vec2(0.4015315, 0.00368995),
+    vec2(0.2348373, -0.5646414),
+    vec2(0.08148332, -0.1521704),
+    vec2(0.9071004, -0.04301345),
+    vec2(0.5765684, -0.7820904),
+    vec2(0.02575831, -0.9248317),
+    vec2(-0.4247141, -0.7601865),
+    vec2(-0.1650984, -0.5609509),
+    vec2(-0.00553054, 0.4322597),
+    vec2(0.374622, 0.536724),
+    vec2(0.629549, 0.3171313),
+    vec2(-0.1453903, 0.8028749),
+    vec2(0.1050673, 0.9782572),
+    vec2(0.7705216, 0.6211317),
+    vec2(-0.5209134, -0.2073833),
+    vec2(-0.2157063, -0.05150497),
+    vec2(-0.7314271, -0.4448851),
+    vec2(-0.9658175, -0.08176702),
+    vec2(-0.6456084, 0.08727718),
+    vec2(0.4758473, 0.8578165),
+    vec2(-0.4970213, 0.3748735),
+    vec2(-0.79823, 0.4584326),
+    vec2(-0.4652869, 0.7911729)
+);
+
+vec2 findShadowOccluders(sampler2D shadowMap, vec3 coords)
+{
+    float receiver = coords.z;
+    float searchDistance = min(maxSearchDistance, lightSizeFactor / receiver * (receiver - nearPlane));
+    float depthSum = 0;
+    int occluderCount = 0;
+    for (int i = 0; i < poissonSamples; ++i)
+    {
+        vec2 offset = poissonDisk[i] * searchDistance;
+        float depth = texture2D(shadowMap, coords.xy + offset).r;
+        if (depth < receiver)
+        {
+            ++occluderCount;
+            depthSum += depth;
+        }
+    }
+    return vec2(depthSum / occluderCount, occluderCount);
+}
+
+float poissonFilter(sampler2D shadowMap, vec3 coords, float filterRadius)
+{
+    float sum = 0.0;
+    for (int i = 0; i < poissonSamples; ++i)
+    {
+        vec2 offset = poissonDisk[i] * filterRadius;
+        sum += float(coords.z <= texture2D(shadowMap, coords.xy + offset).r);
+    }
+    return sum / poissonSamples;
+}
+
+float sampleShadow(sampler2D shadowMap, vec4 coords)
+{
+    vec3 coordsProj = coords.xyz / coords.w;
+
+    vec2 occluders = findShadowOccluders(shadowMap, coordsProj);
+    if (occluders.y == 0)
+    {
+        return 1.0;
+    }
+
+    float meanDepth = occluders.x;
+    float penumbra = (coordsProj.z - meanDepth) * lightSizeFactor / meanDepth;
+    float filterRadius = clamp(abs(penumbra), minFilterRadius, maxFilterRadius);
+    return poissonFilter(shadowMap, coordsProj, filterRadius);
+}
+#endif
 
 float unshadowedLightRatio(float distance)
 {
@@ -33,7 +116,7 @@ float unshadowedLightRatio(float distance)
 #endif
                 if (all(lessThan(shadowXYZ.xy, vec2(1.0, 1.0))) && all(greaterThan(shadowXYZ.xy, vec2(0.0, 0.0))))
                 {
-                    shadowing = min(shadow2DProj(shadowTexture@shadow_texture_unit_index, shadowSpaceCoords@shadow_texture_unit_index).r, shadowing);
+                    shadowing = min(sampleShadow(shadowTexture@shadow_texture_unit_index, shadowSpaceCoords@shadow_texture_unit_index), shadowing);
 
                     
                     doneShadows = all(lessThan(shadowXYZ, vec3(0.95, 0.95, 1.0))) && all(greaterThan(shadowXYZ, vec3(0.05, 0.05, 0.0)));
@@ -45,7 +128,7 @@ float unshadowedLightRatio(float distance)
         @endforeach
     #else
         @foreach shadow_texture_unit_index @shadow_texture_unit_list
-            shadowing = min(shadow2DProj(shadowTexture@shadow_texture_unit_index, shadowSpaceCoords@shadow_texture_unit_index).r, shadowing);
+            shadowing = min(sampleShadow(shadowTexture@shadow_texture_unit_index, shadowSpaceCoords@shadow_texture_unit_index), shadowing);
         @endforeach
     #endif
 #if @limitShadowMapDistance
