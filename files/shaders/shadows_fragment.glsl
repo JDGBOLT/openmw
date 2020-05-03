@@ -82,7 +82,7 @@ float poissonFilter(sampler2D shadowMap, vec3 coords, float filterRadius)
 float sampleShadow(sampler2D shadowMap, vec4 coords)
 {
     vec3 coordsProj = coords.xyz / coords.w;
-
+    coordsProj.z = min(coordsProj.z, 1);
     vec2 occluders = findShadowOccluders(shadowMap, coordsProj);
     if (occluders.y == 0)
     {
