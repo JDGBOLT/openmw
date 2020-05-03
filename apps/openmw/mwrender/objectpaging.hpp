@@ -31,8 +31,6 @@ namespace MWRender
 
         osg::ref_ptr<osg::Node> createChunk(float size, const osg::Vec2f& center, const osg::Vec3f& viewPoint, bool compile);
 
-        virtual void setExpiryDelay(double expiryDelay) override { mExpiryDelay = 0.5f; }
-
         void enableObject(const ESM::RefNum & refnum, bool enabled);
         void clear();
 
