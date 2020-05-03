@@ -588,7 +588,7 @@ void Optimizer::FlattenStaticTransformsVisitor::apply(osg::Node& node)
     traverse(node);
 }
 
-bool needvbo(osg::Geometry* geom)
+bool needvbo(const osg::Geometry* geom)
 {
 #if OSG_MIN_VERSION_REQUIRED(3,5,6)
     return true;
@@ -597,7 +597,7 @@ bool needvbo(osg::Geometry* geom)
 #endif
 }
 
-osg::Array* cloneArray(osg::Array* array, osg::VertexBufferObject*& vbo, osg::Geometry* geom)
+osg::Array* cloneArray(osg::Array* array, osg::VertexBufferObject*& vbo, const osg::Geometry* geom)
 {
     array = osg::clone(array, osg::CopyOp::DEEP_COPY_ALL);
     if (!vbo && needvbo(geom))
@@ -1141,7 +1141,7 @@ void Optimizer::MergeGeometryVisitor::apply(osg::Group &group)
         popStateSet();
 }
 
-osg::PrimitiveSet* clonePrimitive(osg::PrimitiveSet* ps, osg::ElementBufferObject*& ebo, osg::Geometry* geom)
+osg::PrimitiveSet* clonePrimitive(osg::PrimitiveSet* ps, osg::ElementBufferObject*& ebo, const osg::Geometry* geom)
 {
     if (ps->referenceCount() <= 1)
         return ps;
@@ -1156,6 +1156,13 @@ osg::PrimitiveSet* clonePrimitive(osg::PrimitiveSet* ps, osg::ElementBufferObjec
         drawElements->setElementBufferObject(ebo);
 
     return ps;
+}
+
+bool containsSharedPrimitives(const osg::Geometry* geom)
+{
+    for (unsigned int i=0; i<geom->getNumPrimitiveSets(); ++i)
+        if (geom->getPrimitiveSet(i)->referenceCount() > 1) return true;
+    return false;
 }
 
 bool Optimizer::MergeGeometryVisitor::mergeGroup(osg::Group& group)
@@ -1541,6 +1548,12 @@ bool Optimizer::MergeGeometryVisitor::mergeGroup(osg::Group& group)
                     }
                 }
 #endif
+                if (doneCombine && !geom->containsSharedArrays() && !containsSharedPrimitives(geom))
+                {
+                    // prefer to use vbo for merged geometries as vbo uses less memory than display lists.
+                    geom->setUseVertexBufferObjects(true);
+                    geom->setUseDisplayList(false);
+                }
             }
         }
 
@@ -1821,13 +1834,6 @@ bool Optimizer::MergeGeometryVisitor::mergeGeometry(osg::Geometry& lhs,osg::Geom
 
     lhs.dirtyBound();
     lhs.dirtyDisplayList();
-
-    if (!lhs.containsSharedArrays())
-    {
-        // prefer to use vbo for merged geometries as vbo uses less memory than display lists.
-        lhs.setUseVertexBufferObjects(true);
-        lhs.setUseDisplayList(false);
-    }
 
     return true;
 }
