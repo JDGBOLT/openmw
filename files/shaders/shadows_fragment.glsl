@@ -19,9 +19,9 @@ const float nearPlane = 0.4;
 const float maxSearchDistance = 0.01;
 const float minFilterRadius = 0.0001;
 const float maxFilterRadius = 0.003;
-const int poissonSamples = 25;
+const int shadowSampleCount = 25;
 
-const vec2 poissonDisk[poissonSamples] = vec2[](
+const vec2 poissonDisk[shadowSampleCount] = vec2[](
     vec2(0.513658, -0.361747),
     vec2(0.7941055, -0.5156633),
     vec2(0.4015315, 0.00368995),
@@ -49,16 +49,15 @@ const vec2 poissonDisk[poissonSamples] = vec2[](
     vec2(-0.4652869, 0.7911729)
 );
 
-vec2 findShadowOccluders(sampler2D shadowMap, vec3 coords)
+vec2 findShadowOccluders(sampler2D shadowMap, vec3 coords, float receiver)
 {
-    float receiver = coords.z;
     float searchDistance = min(maxSearchDistance, lightSizeFactor / receiver * (receiver - nearPlane));
     float depthSum = 0;
     int occluderCount = 0;
-    for (int i = 0; i < poissonSamples; ++i)
+    for (int i = 0; i < shadowSampleCount; ++i)
     {
-        vec2 offset = poissonDisk[i] * searchDistance;
-        float depth = texture2D(shadowMap, coords.xy + offset).r;
+        vec3 offset = vec3(poissonDisk[i] * searchDistance, 0);
+        float depth = texture2DProj(shadowMap, coords + offset).r;
         if (depth < receiver)
         {
             ++occluderCount;
@@ -68,31 +67,31 @@ vec2 findShadowOccluders(sampler2D shadowMap, vec3 coords)
     return vec2(depthSum / occluderCount, occluderCount);
 }
 
-float poissonFilter(sampler2D shadowMap, vec3 coords, float filterRadius)
+float percentageCloserFilter(sampler2D shadowMap, vec3 coords, float receiver, float filterRadius)
 {
     float sum = 0.0;
-    for (int i = 0; i < poissonSamples; ++i)
+    for (int i = 0; i < shadowSampleCount; ++i)
     {
-        vec2 offset = poissonDisk[i] * filterRadius;
-        sum += float(coords.z <= texture2D(shadowMap, coords.xy + offset).r);
+        vec3 offset = vec3(poissonDisk[i] * filterRadius, 0);
+        sum += float(receiver <= texture2DProj(shadowMap, coords + offset).r);
     }
-    return sum / poissonSamples;
+    return sum / shadowSampleCount;
 }
 
 float sampleShadow(sampler2D shadowMap, vec4 coords)
 {
-    vec3 coordsProj = coords.xyz / coords.w;
-    coordsProj.z = min(coordsProj.z, 1);
-    vec2 occluders = findShadowOccluders(shadowMap, coordsProj);
+    float receiverDepth = min(coords.z / coords.w, 1);
+    vec3 coordsProj = coords.xyw;
+    vec2 occluders = findShadowOccluders(shadowMap, coordsProj, receiverDepth);
     if (occluders.y == 0)
     {
         return 1.0;
     }
 
     float meanDepth = occluders.x;
-    float penumbra = (coordsProj.z - meanDepth) * lightSizeFactor / meanDepth;
+    float penumbra = (receiverDepth - meanDepth) * lightSizeFactor / meanDepth;
     float filterRadius = clamp(abs(penumbra), minFilterRadius, maxFilterRadius);
-    return poissonFilter(shadowMap, coordsProj, filterRadius);
+    return percentageCloserFilter(shadowMap, coordsProj, receiverDepth, filterRadius);
 }
 #endif
 
