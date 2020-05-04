@@ -17,8 +17,7 @@
 const float lightSizeFactor = 0.05;
 const float nearPlane = 0.4;
 const float maxSearchDistance = 0.01;
-const float minFilterRadius = 0.0001;
-const float maxFilterRadius = 0.003;
+const float maxFilterRadius = 0.01;
 const int shadowSampleCount = 25;
 
 const vec2 poissonDisk[shadowSampleCount] = vec2[](
@@ -89,8 +88,9 @@ float sampleShadow(sampler2D shadowMap, vec4 coords)
     }
 
     float meanDepth = occluders.x;
-    float penumbra = (receiverDepth - meanDepth) * lightSizeFactor / meanDepth;
-    float filterRadius = clamp(abs(penumbra), minFilterRadius, maxFilterRadius);
+    float penumbra = (receiverDepth - meanDepth) / meanDepth;
+    float filterRadius = penumbra * lightSizeFactor * nearPlane / receiverDepth;
+    filterRadius = min(filterRadius, maxFilterRadius);
     return percentageCloserFilter(shadowMap, coordsProj, receiverDepth, filterRadius);
 }
 #endif
