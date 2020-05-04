@@ -854,9 +854,6 @@ namespace MWWorld
 
     void World::disable (const Ptr& reference)
     {
-        if (reference.getCellRef().getRefNum().hasContentFile())
-            mRendering->pagingEnableObject(reference.getCellRef().getRefNum(), false);
-
         if (!reference.getRefData().isEnabled())
             return;
 
@@ -868,6 +865,9 @@ namespace MWWorld
             throw std::runtime_error("can not disable player object");
 
         reference.getRefData().disable();
+
+        if (reference.getCellRef().getRefNum().hasContentFile())
+            mRendering->pagingEnableObject(reference.getCellRef().getRefNum(), false);
 
         if(mWorldScene->getActiveCells().find (reference.getCell())!=mWorldScene->getActiveCells().end() && reference.getRefData().getCount())
             mWorldScene->removeObjectFromScene (reference);

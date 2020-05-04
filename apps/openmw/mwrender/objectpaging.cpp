@@ -298,7 +298,6 @@ namespace MWRender
         std::vector<ESM::ESMReader> esm;
         const MWWorld::ESMStore& store = MWBase::Environment::get().getWorld()->getStore();
 
-        { OpenThreads::ScopedReadLock lock(mDisabledMutex);
         for (int cellX = startCell.x(); cellX < startCell.x() + size; ++cellX)
         {
             for (int cellY = startCell.y(); cellY < startCell.y() + size; ++cellY)
@@ -322,7 +321,6 @@ namespace MWRender
                             int type = store.findStatic(Misc::StringUtils::lowerCase(ref.mRefID));
                             if (!typeFilter(type,size>=2)) continue;
                             if (deleted) { refs.erase(ref.mRefNum); continue; }
-                            if (mDisabled.count(ref.mRefNum)) continue;
                             refs[ref.mRefNum] = ref;
                         }
                     }
@@ -338,11 +336,16 @@ namespace MWRender
                     if (deleted) { refs.erase(ref.mRefNum); continue; }
                     int type = store.findStatic(Misc::StringUtils::lowerCase(ref.mRefID));
                     if (!typeFilter(type,size>=2)) continue;
-                    if (mDisabled.count(ref.mRefNum)) continue;
                     refs[ref.mRefNum] = ref;
                 }
             }
-        } }
+        }
+
+        {
+            OpenThreads::ScopedReadLock lock(mDisabledMutex);
+            for (auto disabled : mDisabled)
+                refs.erase(disabled);
+        }
 
         osg::Vec2f minBound = (center - osg::Vec2f(size/2.f, size/2.f));
         osg::Vec2f maxBound = (center + osg::Vec2f(size/2.f, size/2.f));
