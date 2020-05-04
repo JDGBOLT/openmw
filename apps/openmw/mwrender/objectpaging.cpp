@@ -342,7 +342,7 @@ namespace MWRender
         }
 
         {
-            OpenThreads::ScopedReadLock lock(mDisabledMutex);
+            OpenThreads::ScopedLock<OpenThreads::Mutex> lock(mDisabledMutex);
             for (auto disabled : mDisabled)
                 refs.erase(disabled);
         }
@@ -497,14 +497,14 @@ namespace MWRender
 
     void ObjectPaging::enableObject(const ESM::RefNum & refnum, bool enabled)
     {
-        OpenThreads::ScopedWriteLock lock(mDisabledMutex);
+        OpenThreads::ScopedLock<OpenThreads::Mutex> lock(mDisabledMutex);
         if (enabled) mDisabled.erase(refnum);
         else mDisabled.insert(refnum);
     }
 
     void ObjectPaging::clear()
     {
-        OpenThreads::ScopedWriteLock lock(mDisabledMutex);
+        OpenThreads::ScopedLock<OpenThreads::Mutex> lock(mDisabledMutex);
         mDisabled.clear();
     }
 

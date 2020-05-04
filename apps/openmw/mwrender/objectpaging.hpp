@@ -5,7 +5,7 @@
 #include <components/resource/resourcemanager.hpp>
 #include <components/esm/loadcell.hpp>
 
-#include <OpenThreads/ReadWriteMutex>
+#include <OpenThreads/Mutex>
 
 namespace Resource
 {
@@ -41,7 +41,7 @@ namespace MWRender
         float mMergeFactor;
         float mMinSize;
 
-        OpenThreads::ReadWriteMutex mDisabledMutex;
+        OpenThreads::Mutex mDisabledMutex;
         std::set<ESM::RefNum> mDisabled;
 
         OpenThreads::Mutex mSizeCacheMutex;
