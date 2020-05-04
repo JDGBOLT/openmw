@@ -45,7 +45,7 @@ namespace MWRender
         }
     }
 
-    const std::string& getModel(int type, const std::string& id, const MWWorld::ESMStore& store)
+    std::string getModel(int type, const std::string& id, const MWWorld::ESMStore& store)
     {
         switch (type)
         {
@@ -58,7 +58,7 @@ namespace MWRender
           case ESM::REC_CONT:
             return store.get<ESM::Container>().searchStatic(id)->mModel;
           default:
-            assert(0);
+            return std::string();
         }
     }
 
