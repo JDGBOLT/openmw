@@ -595,6 +595,7 @@ void QuadTreeWorld::unloadCell(int x, int y)
 void QuadTreeWorld::addChunkManager(QuadTreeWorld::ChunkManager* m)
 {
     mChunkManagers.push_back(m);
+    mTerrainRoot->setNodeMask(mTerrainRoot->getNodeMask()|m->getNodeMask());
 }
 
 }

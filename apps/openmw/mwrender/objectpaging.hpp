@@ -31,6 +31,8 @@ namespace MWRender
 
         osg::ref_ptr<osg::Node> createChunk(float size, const osg::Vec2f& center, const osg::Vec3f& viewPoint, bool compile);
 
+        virtual unsigned int getNodeMask() override;
+
         void enableObject(const ESM::RefNum & refnum, bool enabled);
         void clear();
 
