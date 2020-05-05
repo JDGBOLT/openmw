@@ -40,6 +40,8 @@ namespace MWRender
         Resource::SceneManager* mSceneManager;
         float mMergeFactor;
         float mMinSize;
+        float mMinSizeMergeFactor;
+        float mMinSizeCostMultiplier;
 
         OpenThreads::Mutex mDisabledMutex;
         std::set<ESM::RefNum> mDisabled;
