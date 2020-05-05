@@ -76,6 +76,9 @@ while [ $# -gt 0 ]; do
 				PLATFORM=$1
 				shift ;;
 
+			P )
+				PDBS=true ;;
+
 			c )
 				CONFIGURATION=$1
 				shift ;;
@@ -107,6 +110,8 @@ Options:
 		Choose the Visual Studio version to use.
 	-n
 		Produce NMake makefiles instead of a Visual Studio solution.
+	-P
+		Download debug symbols where available
 	-V
 		Run verbosely
 EOF
@@ -257,6 +262,7 @@ case $VS_VERSION in
 		MSVC_REAL_VER="16"
 		MSVC_VER="14.2"
 		MSVC_YEAR="2015"
+		MSVC_REAL_YEAR="2019"
 		MSVC_DISPLAY_YEAR="2019"
 		BOOST_VER="1.71.0"
 		BOOST_VER_URL="1_71_0"
@@ -269,6 +275,7 @@ case $VS_VERSION in
 		MSVC_REAL_VER="15"
 		MSVC_VER="14.1"
 		MSVC_YEAR="2015"
+		MSVC_REAL_YEAR="2017"
 		MSVC_DISPLAY_YEAR="2017"
 		BOOST_VER="1.67.0"
 		BOOST_VER_URL="1_67_0"
@@ -281,6 +288,7 @@ case $VS_VERSION in
 		MSVC_REAL_VER="14"
 		MSVC_VER="14.0"
 		MSVC_YEAR="2015"
+		MSVC_REAL_YEAR="2015"
 		MSVC_DISPLAY_YEAR="2015"
 		BOOST_VER="1.67.0"
 		BOOST_VER_URL="1_67_0"
@@ -288,15 +296,8 @@ case $VS_VERSION in
 		;;
 
 	12|12.0|2013 )
-		GENERATOR="Visual Studio 12 2013"
-		TOOLSET="vc120"
-		MSVC_REAL_VER="12"
-		MSVC_VER="12.0"
-		MSVC_YEAR="2013"
-		MSVC_DISPLAY_YEAR="2013"
-		BOOST_VER="1.58.0"
-		BOOST_VER_URL="1_58_0"
-		BOOST_VER_SDK="105800"
+		echo "Visual Studio 2013 is no longer supported"
+		exit 1
 		;;
 esac
 
@@ -408,9 +409,15 @@ if [ -z $SKIP_DOWNLOAD ]; then
 		"OpenAL-Soft-1.19.1.zip"
 
 	# OSG
-	download "OpenSceneGraph 3.4.1-scrawl" \
-		"https://www.lysator.liu.se/~ace/OpenMW/deps/OSG-3.4.1-scrawl-msvc${MSVC_YEAR}-win${BITS}.7z" \
-		"OSG-3.4.1-scrawl-msvc${MSVC_YEAR}-win${BITS}.7z"
+	download "OpenSceneGraph 3.4.2-scrawl" \
+		"https://rgw.ctrl-c.liu.se/openmw/Deps/OSG-3.4.2-scrawl-msvc${MSVC_REAL_YEAR}-win${BITS}.7z" \
+		"OSG-3.4.2-scrawl-msvc${MSVC_REAL_YEAR}-win${BITS}.7z"
+
+	if [ -n "$PDBS" ]; then
+		download "OpenSceneGraph symbols" \
+			"https://rgw.ctrl-c.liu.se/openmw/Deps/OSG-3.4.2-scrawl-msvc${MSVC_REAL_YEAR}-win${BITS}-sym.7z" \
+			"OSG-3.4.2-scrawl-msvc${MSVC_REAL_YEAR}-win${BITS}-sym.7z"
+	fi
 
 	# Qt
 	if [ -z $APPVEYOR ]; then
@@ -608,19 +615,20 @@ printf "OpenAL-Soft 1.19.1... "
 cd $DEPS
 echo
 # OSG
-printf "OSG 3.4.1-scrawl... "
+printf "OSG 3.4.2-scrawl... "
 {
 	cd $DEPS_INSTALL
 	if [ -d OSG ] && \
 		grep "OPENSCENEGRAPH_MAJOR_VERSION    3" OSG/include/osg/Version > /dev/null && \
 		grep "OPENSCENEGRAPH_MINOR_VERSION    4" OSG/include/osg/Version > /dev/null && \
-		grep "OPENSCENEGRAPH_PATCH_VERSION    1" OSG/include/osg/Version > /dev/null
+		grep "OPENSCENEGRAPH_PATCH_VERSION    2" OSG/include/osg/Version > /dev/null
 	then
 		printf "Exists. "
 	elif [ -z $SKIP_EXTRACT ]; then
 		rm -rf OSG
-		eval 7z x -y "${DEPS}/OSG-3.4.1-scrawl-msvc${MSVC_YEAR}-win${BITS}.7z" $STRIP
-		mv "OSG-3.4.1-scrawl-msvc${MSVC_YEAR}-win${BITS}" OSG
+		eval 7z x -y "${DEPS}/OSG-3.4.2-scrawl-msvc${MSVC_REAL_YEAR}-win${BITS}.7z" $STRIP
+		[ -n "$PDBS" ] && eval 7z x -y "${DEPS}/OSG-3.4.2-scrawl-msvc${MSVC_REAL_YEAR}-win${BITS}-sym.7z" $STRIP
+		mv "OSG-3.4.2-scrawl-msvc${MSVC_REAL_YEAR}-win${BITS}" OSG
 	fi
 	OSG_SDK="$(real_pwd)/OSG"
 	add_cmake_opts -DOSG_DIR="$OSG_SDK"
@@ -629,10 +637,16 @@ printf "OSG 3.4.1-scrawl... "
 	else
 		SUFFIX=""
 	fi
-	add_runtime_dlls "$(pwd)/OSG/bin/"{OpenThreads,zlib,libpng*}${SUFFIX}.dll \
+	add_runtime_dlls "$(pwd)/OSG/bin/"{OpenThreads,zlib,libpng}${SUFFIX}.dll \
 		"$(pwd)/OSG/bin/osg"{,Animation,DB,FX,GA,Particle,Text,Util,Viewer,Shadow}${SUFFIX}.dll
-	add_osg_dlls "$(pwd)/OSG/bin/osgPlugins-3.4.1/osgdb_"{bmp,dds,freetype,jpeg,osg,png,tga}${SUFFIX}.dll
-	add_osg_dlls "$(pwd)/OSG/bin/osgPlugins-3.4.1/osgdb_serializers_osg"{,animation,fx,ga,particle,text,util,viewer,shadow}${SUFFIX}.dll
+	add_osg_dlls "$(pwd)/OSG/bin/osgPlugins-3.4.2/osgdb_"{bmp,dds,freetype,jpeg,osg,png,tga}${SUFFIX}.dll
+	add_osg_dlls "$(pwd)/OSG/bin/osgPlugins-3.4.2/osgdb_serializers_osg"{,animation,fx,ga,particle,text,util,viewer,shadow}${SUFFIX}.dll
+        if [ -n "$PDBS" ]; then
+           add_runtime_dlls "$(pwd)/OSG/bin/osg"{,Animation,DB,FX,GA,Particle,Text,Util,Viewer,Shadow}${SUFFIX}.pdb
+	   add_osg_dlls "$(pwd)/OSG/bin/osgPlugins-3.4.2/osgdb_"{bmp,dds,freetype,jpeg,osg,png,tga}${SUFFIX}.pdb
+	   add_osg_dlls "$(pwd)/OSG/bin/osgPlugins-3.4.2/osgdb_serializers_osg"{,animation,fx,ga,particle,text,util,viewer,shadow}${SUFFIX}.pdb
+        fi
+
 	echo Done.
 }
 cd $DEPS
@@ -815,10 +829,10 @@ fi
 	done
 	echo
 	echo "- OSG Plugin DLLs..."
-	mkdir -p ${DLL_PREFIX}osgPlugins-3.4.1
+	mkdir -p ${DLL_PREFIX}osgPlugins-3.4.2
 	for DLL in $OSG_PLUGINS; do
 		echo "    $(basename $DLL)."
-		cp "$DLL" ${DLL_PREFIX}osgPlugins-3.4.1
+		cp "$DLL" ${DLL_PREFIX}osgPlugins-3.4.2
 	done
 	echo
 	echo "- Qt Platform DLLs..."
