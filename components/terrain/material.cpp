@@ -176,7 +176,6 @@ namespace Terrain
         std::vector<osg::ref_ptr<osg::StateSet> > passes;
 
         unsigned int blendmapIndex = 0;
-        unsigned int passIndex = 0;
         for (std::vector<TextureLayer>::const_iterator it = layers.begin(); it != layers.end(); ++it)
         {
             bool firstLayer = (it == layers.begin());
@@ -267,9 +266,6 @@ namespace Terrain
                 }
 
             }
-
-            stateset->setRenderBinDetails(passIndex++, "RenderBin");
-
             passes.push_back(stateset);
         }
         return passes;
