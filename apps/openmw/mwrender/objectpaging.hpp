@@ -38,6 +38,7 @@ namespace MWRender
 
     private:
         Resource::SceneManager* mSceneManager;
+        bool mDebugBatches;
         float mMergeFactor;
         float mMinSize;
         float mMinSizeMergeFactor;
