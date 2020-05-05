@@ -19,8 +19,8 @@ platform:
 
 configuration:
 #    - Debug
-    - Release
-#    - RelWithDebInfo
+#    - Release
+    - RelWithDebInfo
 
 # For the Qt, Boost, CMake, etc installs
 #os: Visual Studio 2017
@@ -34,14 +34,20 @@ cache:
     - C:\projects\openmw\deps\Bullet-2.86-msvc2015-win64.7z
     - C:\projects\openmw\deps\MyGUI-3.2.2-msvc2015-win32.7z
     - C:\projects\openmw\deps\MyGUI-3.2.2-msvc2015-win64.7z
-    - C:\projects\openmw\deps\OSG-3.4.1-scrawl-msvc2015-win32.7z
-    - C:\projects\openmw\deps\OSG-3.4.1-scrawl-msvc2015-win64.7z
+    - C:\projects\openmw\deps\OSG-3.4.2-scrawl-msvc2017-win32.7z
+    - C:\projects\openmw\deps\OSG-3.4.2-scrawl-msvc2017-win64.7z
+    - C:\projects\openmw\deps\OSG-3.4.2-scrawl-msvc2019-win32.7z
+    - C:\projects\openmw\deps\OSG-3.4.2-scrawl-msvc2019-win64.7z
+    - C:\projects\openmw\deps\OSG-3.4.2-scrawl-msvc2017-win32-sym.7z
+    - C:\projects\openmw\deps\OSG-3.4.2-scrawl-msvc2017-win64-sym.7z
+    - C:\projects\openmw\deps\OSG-3.4.2-scrawl-msvc2019-win32-sym.7z
+    - C:\projects\openmw\deps\OSG-3.4.2-scrawl-msvc2019-win64-sym.7z
     - C:\projects\openmw\deps\ffmpeg-3.2.4-dev-win32.zip
     - C:\projects\openmw\deps\ffmpeg-3.2.4-dev-win64.zip
     - C:\projects\openmw\deps\ffmpeg-3.2.4-win32.zip
     - C:\projects\openmw\deps\ffmpeg-3.2.4-win64.zip
     - C:\projects\openmw\deps\OpenAL-Soft-1.19.1.zip
-    - C:\projects\openmw\deps\SDL2-2.0.7.zip
+    - C:\projects\openmw\deps\SDL2-2.0.12.zip
 
 clone_folder: C:\projects\openmw
 
@@ -50,7 +56,7 @@ install:
 
 before_build:
     - cmd: git submodule update --init --recursive
-    - cmd: sh %APPVEYOR_BUILD_FOLDER%\CI\before_script.msvc.sh -c %configuration% -p %PLATFORM% -v %msvc% -V
+    - cmd: sh %APPVEYOR_BUILD_FOLDER%\CI\before_script.msvc.sh -c %configuration% -p %PLATFORM% -v %msvc% -V -P
 
 build_script:
     - cmd: if %PLATFORM%==Win32 set build=MSVC%msvc%_32
@@ -58,7 +64,7 @@ build_script:
     - cmd: msbuild %build%\OpenMW.sln /t:Build /p:Configuration=%configuration% /m:2 /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
 after_build:
-    - cmd: if %PLATFORM%==x64 7z a OpenMW_MSVC%msvc%_%platform%_%appveyor_pull_request_number%_%appveyor_pull_request_head_commit%.zip %APPVEYOR_BUILD_FOLDER%\MSVC%msvc%_64\%configuration%\ -xr"!*.pdb"
+    - cmd: if %PLATFORM%==x64 7z a OpenMW_MSVC%msvc%_x64.7z %APPVEYOR_BUILD_FOLDER%\MSVC%msvc%_64\%configuration%\
     #- cmd: if %PLATFORM%==x64 7z a OpenMW_MSVC%msvc%_%platform%_%appveyor_pull_request_number%_%appveyor_pull_request_head_commit%_pdb.zip %APPVEYOR_BUILD_FOLDER%\MSVC%msvc%_64\%configuration%\*.pdb
 
 test: off
@@ -71,7 +77,7 @@ test: off
 #    on_build_status_changed: true
 
 artifacts:
-  - path: OpenMW_MSVC%msvc%_%platform%_%appveyor_pull_request_number%_%appveyor_pull_request_head_commit%.zip
-    name: OpenMW_MSVC%msvc%_%platform%_%appveyor_pull_request_number%_%appveyor_pull_request_head_commit%
+  - path: OpenMW_MSVC%msvc%_x64.7z
+    name: OpenMW_MSVC%msvc%_x64
   #- path: OpenMW_MSVC%msvc%_%platform%_%appveyor_pull_request_number%_%appveyor_pull_request_head_commit%_pdb.zip
   #  name: OpenMW_MSVC%msvc%_%platform%_%appveyor_pull_request_number%_%appveyor_pull_request_head_commit%_pdb
