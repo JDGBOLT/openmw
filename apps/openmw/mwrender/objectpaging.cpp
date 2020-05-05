@@ -451,7 +451,7 @@ namespace MWRender
         osg::ref_ptr<osg::Group> group = new osg::Group;
         osg::ref_ptr<osg::Group> mergeGroup = new osg::Group;
         osg::ref_ptr<TemplateRef> templateRefs = new TemplateRef;
-        osgUtil::StateToCompile stateToCompile(0);
+        osgUtil::StateToCompile stateToCompile(0, nullptr);
         for (const auto& pair : nodes)
         {
             const osg::Node* cnode = pair.first;
