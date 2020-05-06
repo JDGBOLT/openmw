@@ -23,6 +23,7 @@ World::World(osg::Group* parent, osg::Group* compileRoot, Resource::ResourceSyst
 {
     mTerrainRoot = new osg::Group;
     mTerrainRoot->setNodeMask(nodeMask);
+    mTerrainRoot->getOrCreateStateSet()->setRenderingHint(osg::StateSet::OPAQUE_BIN);
 
     osg::ref_ptr<osg::Material> material (new osg::Material);
     material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
