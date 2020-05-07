@@ -31,7 +31,8 @@ ChunkManager::ChunkManager(Storage *storage, Resource::SceneManager *sceneMgr, T
     , mCompositeMapLevel(1.f)
     , mMaxCompGeometrySize(1.f)
 {
-
+    mMultiPassRoot = new osg::StateSet;
+    mMultiPassRoot->setRenderingHint(osg::StateSet::OPAQUE_BIN);
 }
 
 osg::ref_ptr<osg::Node> ChunkManager::getChunk(float size, const osg::Vec2f &center, unsigned char lod, unsigned int lodFlags, bool far, const osg::Vec3f& viewPoint, bool compile)
@@ -216,6 +217,7 @@ osg::ref_ptr<osg::Node> ChunkManager::createChunk(float chunkSize, const osg::Ve
     }
     else
     {
+        geometry->setStateSet(mMultiPassRoot);
         geometry->setPasses(createPasses(chunkSize, chunkCenter, false));
     }
 
