@@ -265,9 +265,9 @@ namespace MWWorld
         if (bypass && !mStartCell.empty())
         {
             ESM::Position pos;
-
             if (findExteriorPosition (mStartCell, pos))
             {
+                mWorldScene->preloadTerrain(pos.asVec3());
                 changeToExteriorCell (pos, true);
                 adjustPosition(getPlayerPtr(), false);
             }
@@ -291,6 +291,7 @@ namespace MWWorld
                 pos.rot[0] = 0;
                 pos.rot[1] = 0;
                 pos.rot[2] = 0;
+                mWorldScene->preloadTerrain(pos.asVec3());
                 mWorldScene->changeToExteriorCell(pos, true);
             }
         }
@@ -404,9 +405,9 @@ namespace MWWorld
                 mPlayer->readRecord(reader, type);
                 if (getPlayerPtr().isInCell())
                 {
-                    mWorldScene->preloadCell(getPlayerPtr().getCell(), true);
                     if (getPlayerPtr().getCell()->isExterior())
                         mWorldScene->preloadTerrain(getPlayerPtr().getRefData().getPosition().asVec3());
+                    mWorldScene->preloadCell(getPlayerPtr().getCell(), true);
                 }
                 break;
             default:

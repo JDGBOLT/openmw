@@ -174,6 +174,8 @@ namespace MWWorld
     public:
         TerrainPreloadItem(const std::vector<osg::ref_ptr<Terrain::View> >& views, Terrain::World* world, const std::vector<CellPreloader::PositionCellGrid>& preloadPositions)
             : mAbort(false)
+            , mProgress(views.size())
+            , mProgressRange(0)
             , mTerrainViews(views)
             , mWorld(world)
             , mPreloadPositions(preloadPositions)
@@ -191,7 +193,7 @@ namespace MWWorld
             for (unsigned int i=0; i<mTerrainViews.size() && i<mPreloadPositions.size() && !mAbort; ++i)
             {
                 mTerrainViews[i]->reset();
-                mWorld->preload(mTerrainViews[i], mPreloadPositions[i].first, mPreloadPositions[i].second, mAbort);
+                mWorld->preload(mTerrainViews[i], mPreloadPositions[i].first, mPreloadPositions[i].second, mAbort, mProgress[i], mProgressRange);
             }
         }
 
@@ -200,8 +202,13 @@ namespace MWWorld
             mAbort = true;
         }
 
+        int getProgress() const { return mProgress[0]; }
+        int getProgressRange() const { return mProgress[0] ? mProgressRange : 0; }
+
     private:
         std::atomic<bool> mAbort;
+        std::vector<std::atomic<int>> mProgress;
+        int mProgressRange;
         std::vector<osg::ref_ptr<Terrain::View> > mTerrainViews;
         Terrain::World* mWorld;
         std::vector<CellPreloader::PositionCellGrid> mPreloadPositions;
@@ -328,9 +335,6 @@ namespace MWWorld
             }
 
             mPreloadCells.erase(found);
-
-            if (cell->isExterior() && mTerrainPreloadItem && mTerrainPreloadItem->isDone())
-                mTerrainPreloadItem->storeViews(0.0);
         }
     }
 
@@ -413,6 +417,24 @@ namespace MWWorld
     void CellPreloader::setUnrefQueue(SceneUtil::UnrefQueue* unrefQueue)
     {
         mUnrefQueue = unrefQueue;
+    }
+
+    bool CellPreloader::getTerrainPreloadInProgress(int& progress, int& progressRange, double timestamp)
+    {
+        if (!mTerrainPreloadItem)
+            return false;
+        else if (mTerrainPreloadItem->isDone())
+        {
+            mTerrainPreloadItem->storeViews(timestamp);
+            mTerrainPreloadItem = nullptr;
+            return false;
+        }
+        else
+        {
+            progress = mTerrainPreloadItem->getProgress();
+            progressRange = mTerrainPreloadItem->getProgressRange();
+            return !progress || progress < progressRange;
+        }
     }
 
     void CellPreloader::setTerrainPreloadPositions(const std::vector<CellPreloader::PositionCellGrid> &positions)
