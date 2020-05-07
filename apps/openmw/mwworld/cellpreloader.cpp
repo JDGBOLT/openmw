@@ -202,8 +202,8 @@ namespace MWWorld
             mAbort = true;
         }
 
-        int getProgress() const { return mProgress[0]; }
-        int getProgressRange() const { return mProgress[0] ? mProgressRange : 0; }
+        int getProgress() const { return !mProgress.empty() ? mProgress[0].load() : 0; }
+        int getProgressRange() const { return !mProgress.empty() && mProgress[0].load() ? mProgressRange : 0; }
 
     private:
         std::atomic<bool> mAbort;
@@ -437,6 +437,20 @@ namespace MWWorld
         }
     }
 
+    void CellPreloader::abortTerrainPreloadExcept(const osg::Vec3f& exceptPos)
+    {
+        if (mTerrainPreloadItem && !mTerrainPreloadItem->isDone())
+        {
+            const float resetThreshold = ESM::Land::REAL_SIZE;
+            for (auto pos : mTerrainPreloadPositions)
+                if ((pos.first-exceptPos).length2() < resetThreshold*resetThreshold)
+                    return;
+            mTerrainPreloadItem->abort();
+            mTerrainPreloadItem->waitTillDone();
+            mTerrainPreloadItem = nullptr;
+        }
+    }
+
     void CellPreloader::setTerrainPreloadPositions(const std::vector<CellPreloader::PositionCellGrid> &positions)
     {
         if (mTerrainPreloadItem && !mTerrainPreloadItem->isDone())
@@ -458,8 +472,12 @@ namespace MWWorld
             }
 
             mTerrainPreloadPositions = positions;
-            mTerrainPreloadItem = new TerrainPreloadItem(mTerrainViews, mTerrain, positions);
-            mWorkQueue->addWorkItem(mTerrainPreloadItem);
+
+            if (!positions.empty())
+            {
+                mTerrainPreloadItem = new TerrainPreloadItem(mTerrainViews, mTerrain, positions);
+                mWorkQueue->addWorkItem(mTerrainPreloadItem);
+            }
         }
     }
 

@@ -842,6 +842,8 @@ namespace MWWorld
         if (changeEvent)
             MWBase::Environment::get().getWindowManager()->fadeScreenOut(0.5);
 
+        preloadTerrain(position.asVec3());
+
         changeCellGrid(x, y, changeEvent);
 
         CellStore* current = MWBase::Environment::get().getWorld()->getExterior(x, y);
@@ -1120,6 +1122,7 @@ namespace MWWorld
 
     void Scene::preloadTerrain(const osg::Vec3f &pos)
     {
+        mPreloader->abortTerrainPreloadExcept(pos);
         std::vector<PositionCellGrid> vec;
         vec.emplace_back(pos, gridCenterToBounds(getNewGridCenter(pos)));
         mPreloader->setTerrainPreloadPositions(vec);

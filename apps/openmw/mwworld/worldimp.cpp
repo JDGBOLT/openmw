@@ -267,7 +267,6 @@ namespace MWWorld
             ESM::Position pos;
             if (findExteriorPosition (mStartCell, pos))
             {
-                mWorldScene->preloadTerrain(pos.asVec3());
                 changeToExteriorCell (pos, true);
                 adjustPosition(getPlayerPtr(), false);
             }
@@ -291,7 +290,6 @@ namespace MWWorld
                 pos.rot[0] = 0;
                 pos.rot[1] = 0;
                 pos.rot[2] = 0;
-                mWorldScene->preloadTerrain(pos.asVec3());
                 mWorldScene->changeToExteriorCell(pos, true);
             }
         }
