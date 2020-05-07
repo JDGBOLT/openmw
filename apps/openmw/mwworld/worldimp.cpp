@@ -267,7 +267,6 @@ namespace MWWorld
         if (bypass && !mStartCell.empty())
         {
             ESM::Position pos;
-
             if (findExteriorPosition (mStartCell, pos))
             {
                 changeToExteriorCell (pos, true);
@@ -406,9 +405,9 @@ namespace MWWorld
                 mPlayer->readRecord(reader, type);
                 if (getPlayerPtr().isInCell())
                 {
-                    mWorldScene->preloadCell(getPlayerPtr().getCell(), true);
                     if (getPlayerPtr().getCell()->isExterior())
                         mWorldScene->preloadTerrain(getPlayerPtr().getRefData().getPosition().asVec3());
+                    mWorldScene->preloadCell(getPlayerPtr().getCell(), true);
                 }
                 break;
             default:
