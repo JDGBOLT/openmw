@@ -140,9 +140,9 @@ private:
 
         /// Store a preloaded view into the cache with the intent that the next rendering traversal can use it.
         /// @note Not thread safe.
-        virtual void storeView(const View* view, double referenceTime) {}
+        virtual bool storeView(const View* view, double referenceTime) {return true;}
 
-        virtual void clearCachedViews(const osg::Vec3f& pos) {}
+        virtual void rebuildViews() {}
 
         virtual void reportStats(unsigned int frameNumber, osg::Stats* stats) {}
 

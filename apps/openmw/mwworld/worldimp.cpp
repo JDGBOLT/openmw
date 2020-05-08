@@ -830,7 +830,8 @@ namespace MWWorld
             if (reference.getCellRef().getRefNum().hasContentFile())
             {
                 int type = mStore.find(Misc::StringUtils::lowerCase(reference.getCellRef().getRefId()));
-                mRendering->pagingEnableObject(type, reference, true);
+                if (mRendering->pagingEnableObject(type, reference, true))
+                    mWorldScene->reloadTerrain();
             }
         }
     }
@@ -871,7 +872,8 @@ namespace MWWorld
         if (reference.getCellRef().getRefNum().hasContentFile())
         {
             int type = mStore.find(Misc::StringUtils::lowerCase(reference.getCellRef().getRefId()));
-            mRendering->pagingEnableObject(type, reference, false);
+            if (mRendering->pagingEnableObject(type, reference, false))
+                mWorldScene->reloadTerrain();
         }
 
         if(mWorldScene->getActiveCells().find (reference.getCell())!=mWorldScene->getActiveCells().end() && reference.getRefData().getCount())
