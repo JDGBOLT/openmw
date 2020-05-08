@@ -40,6 +40,8 @@ namespace DetourNavigator
 
         void update(const osg::Vec3f& playerPosition) override;
 
+        void setUpdatesEnabled(bool enabled) override;
+
         void wait() override;
 
         SharedNavMeshCacheItem getNavMesh(const osg::Vec3f& agentHalfExtents) const override;
@@ -55,6 +57,7 @@ namespace DetourNavigator
     private:
         Settings mSettings;
         NavMeshManager mNavMeshManager;
+        bool mUpdatesEnabled;
         std::map<osg::Vec3f, std::size_t> mAgents;
         std::unordered_map<ObjectId, ObjectId> mAvoidIds;
         std::unordered_map<ObjectId, ObjectId> mWaterIds;
