@@ -5,6 +5,8 @@
 #include <components/esm/esmwriter.hpp>
 #include <components/esm/stolenitems.hpp>
 
+#include <components/detournavigator/navigator.hpp>
+
 #include <components/sceneutil/positionattitudetransform.hpp>
 
 #include "../mwworld/esmstore.hpp"
@@ -880,6 +882,12 @@ namespace MWMechanics
     bool MechanicsManager::toggleAI()
     {
         mAI = !mAI;
+
+        MWBase::World* world = MWBase::Environment::get().getWorld();
+        world->getNavigator()->setUpdatesEnabled(mAI);
+        if (mAI)
+           world->getNavigator()->update(world->getPlayerPtr().getRefData().getPosition().asVec3());
+
         return mAI;
     }
 
