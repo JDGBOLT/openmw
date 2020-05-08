@@ -1128,6 +1128,11 @@ namespace MWWorld
         mPreloader->setTerrainPreloadPositions(vec);
     }
 
+    void Scene::reloadTerrain()
+    {
+        mPreloader->setTerrainPreloadPositions(std::vector<PositionCellGrid>());
+    }
+
     struct ListFastTravelDestinationsVisitor
     {
         ListFastTravelDestinationsVisitor(float preloadDist, const osg::Vec3f& playerPos)
