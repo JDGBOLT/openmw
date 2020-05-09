@@ -266,7 +266,6 @@ namespace MWWorld
         if (bypass && !mStartCell.empty())
         {
             ESM::Position pos;
-
             if (findExteriorPosition (mStartCell, pos))
             {
                 changeToExteriorCell (pos, true);
@@ -405,9 +404,9 @@ namespace MWWorld
                 mPlayer->readRecord(reader, type);
                 if (getPlayerPtr().isInCell())
                 {
-                    mWorldScene->preloadCell(getPlayerPtr().getCell(), true);
                     if (getPlayerPtr().getCell()->isExterior())
                         mWorldScene->preloadTerrain(getPlayerPtr().getRefData().getPosition().asVec3());
+                    mWorldScene->preloadCell(getPlayerPtr().getCell(), true);
                 }
                 break;
             default:
@@ -828,6 +827,13 @@ namespace MWWorld
 
             if(mWorldScene->getActiveCells().find (reference.getCell()) != mWorldScene->getActiveCells().end() && reference.getRefData().getCount())
                 mWorldScene->addObjectToScene (reference);
+
+            if (reference.getCellRef().getRefNum().hasContentFile())
+            {
+                int type = mStore.find(Misc::StringUtils::lowerCase(reference.getCellRef().getRefId()));
+                if (mRendering->pagingEnableObject(type, reference, true))
+                    mWorldScene->reloadTerrain();
+            }
         }
     }
 
@@ -852,20 +858,27 @@ namespace MWWorld
 
     void World::disable (const Ptr& reference)
     {
+        if (!reference.getRefData().isEnabled())
+            return;
+
         // disable is a no-op for items in containers
         if (!reference.isInCell())
             return;
 
-        if (reference.getRefData().isEnabled())
+        if (reference == getPlayerPtr())
+            throw std::runtime_error("can not disable player object");
+
+        reference.getRefData().disable();
+
+        if (reference.getCellRef().getRefNum().hasContentFile())
         {
-            if (reference == getPlayerPtr())
-                throw std::runtime_error("can not disable player object");
-
-            reference.getRefData().disable();
-
-            if(mWorldScene->getActiveCells().find (reference.getCell())!=mWorldScene->getActiveCells().end() && reference.getRefData().getCount())
-                mWorldScene->removeObjectFromScene (reference);
+            int type = mStore.find(Misc::StringUtils::lowerCase(reference.getCellRef().getRefId()));
+            if (mRendering->pagingEnableObject(type, reference, false))
+                mWorldScene->reloadTerrain();
         }
+
+        if(mWorldScene->getActiveCells().find (reference.getCell())!=mWorldScene->getActiveCells().end() && reference.getRefData().getCount())
+            mWorldScene->removeObjectFromScene (reference);
     }
 
     void World::advanceTime (double hours, bool incremental)

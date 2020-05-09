@@ -53,7 +53,6 @@ namespace Terrain
         virtual bool isSufficientDetail(QuadTreeNode *node, float dist) = 0;
     };
 
-    class ViewDataMap;
     class ViewData;
 
     class QuadTreeNode : public osg::Group
@@ -91,8 +90,6 @@ namespace Terrain
         const osg::BoundingBox& getBoundingBox() const;
         bool hasValidBounds() const { return mValidBounds; }
 
-        virtual osg::BoundingSphere computeBound() const;
-
         /// size in cell coordinates
         float getSize() const;
 
@@ -101,9 +98,6 @@ namespace Terrain
 
         /// Traverse nodes according to LOD selection.
         void traverseNodes(ViewData* vd, const osg::Vec3f& viewPoint, LodCallback* lodCallback, float maxDist);
-
-        /// Traverse to a specific node and add only that node.
-        void traverseTo(ViewData* vd, float size, const osg::Vec2f& center);
 
         /// Adds all leaf nodes which intersect the line from start to end
         void intersect(ViewData* vd, TerrainLineIntersector& intersector);

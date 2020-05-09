@@ -286,28 +286,6 @@ namespace MWWorld
         ::updateObjectScale(ptr, *mPhysics, mRendering);
     }
 
-    void Scene::getGridCenter(int &cellX, int &cellY)
-    {
-        int maxX = std::numeric_limits<int>::min();
-        int maxY = std::numeric_limits<int>::min();
-        int minX = std::numeric_limits<int>::max();
-        int minY = std::numeric_limits<int>::max();
-        CellStoreCollection::iterator iter = mActiveCells.begin();
-        while (iter!=mActiveCells.end())
-        {
-            assert ((*iter)->getCell()->isExterior());
-            int x = (*iter)->getCell()->getGridX();
-            int y = (*iter)->getCell()->getGridY();
-            maxX = std::max(x, maxX);
-            maxY = std::max(y, maxY);
-            minX = std::min(x, minX);
-            minY = std::min(y, minY);
-            ++iter;
-        }
-        cellX = (minX + maxX) / 2;
-        cellY = (minY + maxY) / 2;
-    }
-
     void Scene::update (float duration, bool paused)
     {
         mPreloadTimer += duration;
@@ -481,6 +459,27 @@ namespace MWWorld
         mPreloader->clear();
     }
 
+    osg::Vec4i Scene::gridCenterToBounds(const osg::Vec2i& centerCell) const
+    {
+        return osg::Vec4i(centerCell.x()-mHalfGridSize,centerCell.y()-mHalfGridSize,centerCell.x()+mHalfGridSize+1,centerCell.y()+mHalfGridSize+1);
+    }
+
+    osg::Vec2i Scene::getNewGridCenter(const osg::Vec3f &pos, const osg::Vec2i* currentGridCenter) const
+    {
+        if (currentGridCenter)
+        {
+            float centerX, centerY;
+            MWBase::Environment::get().getWorld()->indexToPosition(currentGridCenter->x(), currentGridCenter->y(), centerX, centerY, true);
+            float distance = std::max(std::abs(centerX-pos.x()), std::abs(centerY-pos.y()));
+            const float maxDistance = Constants::CellSizeInUnits / 2 + mCellLoadingThreshold; // 1/2 cell size + threshold
+            if (distance <= maxDistance)
+                return *currentGridCenter;
+        }
+        osg::Vec2i newCenter;
+        MWBase::Environment::get().getWorld()->positionToIndex(pos.x(), pos.y(), newCenter.x(), newCenter.y());
+        return newCenter;
+    }
+
     void Scene::playerMoved(const osg::Vec3f &pos)
     {
         const auto navigator = MWBase::Environment::get().getWorld()->getNavigator();
@@ -490,19 +489,9 @@ namespace MWWorld
         if (!mCurrentCell || !mCurrentCell->isExterior())
             return;
 
-        // figure out the center of the current cell grid (*not* necessarily mCurrentCell, which is the cell the player is in)
-        int cellX, cellY;
-        getGridCenter(cellX, cellY);
-        float centerX, centerY;
-        MWBase::Environment::get().getWorld()->indexToPosition(cellX, cellY, centerX, centerY, true);
-        const float maxDistance = Constants::CellSizeInUnits / 2 + mCellLoadingThreshold; // 1/2 cell size + threshold
-        float distance = std::max(std::abs(centerX-pos.x()), std::abs(centerY-pos.y()));
-        if (distance > maxDistance)
-        {
-            int newX, newY;
-            MWBase::Environment::get().getWorld()->positionToIndex(pos.x(), pos.y(), newX, newY);
-            changeCellGrid(newX, newY);
-        }
+        osg::Vec2i newCell = getNewGridCenter(pos, &mCurrentGridCenter);
+        if (newCell != mCurrentGridCenter)
+            changeCellGrid(newCell.x(), newCell.y());
     }
 
     void Scene::changeCellGrid (int playerCellX, int playerCellY, bool changeEvent)
@@ -604,6 +593,9 @@ namespace MWWorld
 
         CellStore* current = MWBase::Environment::get().getWorld()->getExterior(playerCellX, playerCellY);
         MWBase::Environment::get().getWindowManager()->changeCell(current);
+
+        mCurrentGridCenter = osg::Vec2i(playerCellX, playerCellY);
+        mRendering.setActiveGrid(gridCenterToBounds(mCurrentGridCenter));
 
         if (changeEvent)
             mCellChanged = true;
@@ -850,13 +842,40 @@ namespace MWWorld
         if (changeEvent)
             MWBase::Environment::get().getWindowManager()->fadeScreenOut(0.5);
 
+        preloadTerrain(position.asVec3());
+
         changeCellGrid(x, y, changeEvent);
 
         CellStore* current = MWBase::Environment::get().getWorld()->getExterior(x, y);
         changePlayerCell(current, position, adjustPlayerPos);
 
+        checkTerrainLoaded();
+
         if (changeEvent)
             MWBase::Environment::get().getWindowManager()->fadeScreenIn(0.5);
+    }
+
+    void Scene::checkTerrainLoaded()
+    {
+        Loading::Listener* loadingListener = MWBase::Environment::get().getWindowManager()->getLoadingScreen();
+        Loading::ScopedLoad load(loadingListener);
+        int progress = 0, initialProgress = -1, progressRange = 0;
+        while (mPreloader->getTerrainPreloadInProgress(progress, progressRange, mRendering.getReferenceTime()))
+        {
+            if (initialProgress == -1)
+            {
+                loadingListener->setLabel("#{sLoadingMessage4}");
+                initialProgress = progress;
+            }
+            if (progress)
+            {
+                loadingListener->setProgressRange(std::max(0, progressRange-initialProgress));
+                loadingListener->setProgress(progress-initialProgress);
+            }
+            else
+                loadingListener->setProgress(0);
+            OpenThreads::Thread::microSleep(5000);
+        }
     }
 
     CellStore* Scene::getCurrentCell ()
@@ -976,7 +995,7 @@ namespace MWWorld
 
     void Scene::preloadCells(float dt)
     {
-        std::vector<osg::Vec3f> exteriorPositions;
+        std::vector<PositionCellGrid> exteriorPositions;
 
         const MWWorld::ConstPtr player = MWBase::Environment::get().getWorld()->getPlayerPtr();
         osg::Vec3f playerPos = player.getRefData().getPosition().asVec3();
@@ -984,7 +1003,7 @@ namespace MWWorld
         osg::Vec3f predictedPos = playerPos + moved / dt * mPredictionTime;
 
         if (mCurrentCell->isExterior())
-            exteriorPositions.push_back(predictedPos);
+            exteriorPositions.emplace_back(predictedPos, gridCenterToBounds(getNewGridCenter(predictedPos, &mCurrentGridCenter)));
 
         mLastPlayerPos = playerPos;
 
@@ -1001,7 +1020,7 @@ namespace MWWorld
         mPreloader->setTerrainPreloadPositions(exteriorPositions);
     }
 
-    void Scene::preloadTeleportDoorDestinations(const osg::Vec3f& playerPos, const osg::Vec3f& predictedPos, std::vector<osg::Vec3f>& exteriorPositions)
+    void Scene::preloadTeleportDoorDestinations(const osg::Vec3f& playerPos, const osg::Vec3f& predictedPos, std::vector<PositionCellGrid>& exteriorPositions)
     {
         std::vector<MWWorld::ConstPtr> teleportDoors;
         for (const MWWorld::CellStore* cellStore : mActiveCells)
@@ -1035,7 +1054,7 @@ namespace MWWorld
                         int x,y;
                         MWBase::Environment::get().getWorld()->positionToIndex (pos.x(), pos.y(), x, y);
                         preloadCell(MWBase::Environment::get().getWorld()->getExterior(x,y), true);
-                        exteriorPositions.push_back(pos);
+                        exteriorPositions.emplace_back(pos, gridCenterToBounds(getNewGridCenter(pos)));
                     }
                 }
                 catch (std::exception& e)
@@ -1055,7 +1074,7 @@ namespace MWWorld
 
 
         int cellX,cellY;
-        getGridCenter(cellX,cellY);
+        cellX = mCurrentGridCenter.x(); cellY = mCurrentGridCenter.y();
 
         float centerX, centerY;
         MWBase::Environment::get().getWorld()->indexToPosition(cellX, cellY, centerX, centerY, true);
@@ -1103,9 +1122,15 @@ namespace MWWorld
 
     void Scene::preloadTerrain(const osg::Vec3f &pos)
     {
-        std::vector<osg::Vec3f> vec;
-        vec.push_back(pos);
+        mPreloader->abortTerrainPreloadExcept(pos);
+        std::vector<PositionCellGrid> vec;
+        vec.emplace_back(pos, gridCenterToBounds(getNewGridCenter(pos)));
         mPreloader->setTerrainPreloadPositions(vec);
+    }
+
+    void Scene::reloadTerrain()
+    {
+        mPreloader->setTerrainPreloadPositions(std::vector<PositionCellGrid>());
     }
 
     struct ListFastTravelDestinationsVisitor
@@ -1138,7 +1163,7 @@ namespace MWWorld
         std::vector<ESM::Transport::Dest> mList;
     };
 
-    void Scene::preloadFastTravelDestinations(const osg::Vec3f& playerPos, const osg::Vec3f& /*predictedPos*/, std::vector<osg::Vec3f>& exteriorPositions) // ignore predictedPos here since opening dialogue with travel service takes extra time
+    void Scene::preloadFastTravelDestinations(const osg::Vec3f& playerPos, const osg::Vec3f& /*predictedPos*/, std::vector<PositionCellGrid>& exteriorPositions) // ignore predictedPos here since opening dialogue with travel service takes extra time
     {
         const MWWorld::ConstPtr player = MWBase::Environment::get().getWorld()->getPlayerPtr();
         ListFastTravelDestinationsVisitor listVisitor(mPreloadDistance, player.getRefData().getPosition().asVec3());
@@ -1159,7 +1184,7 @@ namespace MWWorld
                 int x,y;
                 MWBase::Environment::get().getWorld()->positionToIndex( pos.x(), pos.y(), x, y);
                 preloadCell(MWBase::Environment::get().getWorld()->getExterior(x,y), true);
-                exteriorPositions.push_back(pos);
+                exteriorPositions.emplace_back(pos, gridCenterToBounds(getNewGridCenter(pos)));
             }
         }
     }

@@ -172,18 +172,22 @@ namespace MWWorld
     class TerrainPreloadItem : public SceneUtil::WorkItem
     {
     public:
-        TerrainPreloadItem(const std::vector<osg::ref_ptr<Terrain::View> >& views, Terrain::World* world, const std::vector<osg::Vec3f>& preloadPositions)
+        TerrainPreloadItem(const std::vector<osg::ref_ptr<Terrain::View> >& views, Terrain::World* world, const std::vector<CellPreloader::PositionCellGrid>& preloadPositions)
             : mAbort(false)
+            , mProgress(views.size())
+            , mProgressRange(0)
             , mTerrainViews(views)
             , mWorld(world)
             , mPreloadPositions(preloadPositions)
         {
         }
 
-        void storeViews(double referenceTime)
+        bool storeViews(double referenceTime)
         {
             for (unsigned int i=0; i<mTerrainViews.size() && i<mPreloadPositions.size(); ++i)
-                mWorld->storeView(mTerrainViews[i], referenceTime);
+                if (!mWorld->storeView(mTerrainViews[i], referenceTime))
+                    return false;
+            return true;
         }
 
         virtual void doWork()
@@ -191,7 +195,7 @@ namespace MWWorld
             for (unsigned int i=0; i<mTerrainViews.size() && i<mPreloadPositions.size() && !mAbort; ++i)
             {
                 mTerrainViews[i]->reset();
-                mWorld->preload(mTerrainViews[i], mPreloadPositions[i], mAbort);
+                mWorld->preload(mTerrainViews[i], mPreloadPositions[i].first, mPreloadPositions[i].second, mAbort, mProgress[i], mProgressRange);
             }
         }
 
@@ -200,11 +204,16 @@ namespace MWWorld
             mAbort = true;
         }
 
+        int getProgress() const { return !mProgress.empty() ? mProgress[0].load() : 0; }
+        int getProgressRange() const { return !mProgress.empty() && mProgress[0].load() ? mProgressRange : 0; }
+
     private:
         std::atomic<bool> mAbort;
+        std::vector<std::atomic<int>> mProgress;
+        int mProgressRange;
         std::vector<osg::ref_ptr<Terrain::View> > mTerrainViews;
         Terrain::World* mWorld;
-        std::vector<osg::Vec3f> mPreloadPositions;
+        std::vector<CellPreloader::PositionCellGrid> mPreloadPositions;
     };
 
     /// Worker thread item: update the resource system's cache, effectively deleting unused entries.
@@ -237,6 +246,7 @@ namespace MWWorld
         , mMaxCacheSize(0)
         , mPreloadInstances(true)
         , mLastResourceCacheUpdate(0.0)
+        , mStoreViewsFailCount(0)
     {
     }
 
@@ -328,9 +338,6 @@ namespace MWWorld
             }
 
             mPreloadCells.erase(found);
-
-            if (cell->isExterior() && mTerrainPreloadItem && mTerrainPreloadItem->isDone())
-                mTerrainPreloadItem->storeViews(0.0);
         }
     }
 
@@ -375,7 +382,17 @@ namespace MWWorld
 
         if (mTerrainPreloadItem && mTerrainPreloadItem->isDone())
         {
-            mTerrainPreloadItem->storeViews(timestamp);
+            if (!mTerrainPreloadItem->storeViews(timestamp))
+            {
+                if (++mStoreViewsFailCount > 100)
+                {
+                    OSG_ALWAYS << "paging views are rebuilt every frame, please check for faulty enable/disable scripts." << std::endl;
+                    mStoreViewsFailCount = 0;
+                }
+                setTerrainPreloadPositions(std::vector<PositionCellGrid>());
+            }
+            else
+                mStoreViewsFailCount = 0;
             mTerrainPreloadItem = nullptr;
         }
     }
@@ -415,11 +432,63 @@ namespace MWWorld
         mUnrefQueue = unrefQueue;
     }
 
-    void CellPreloader::setTerrainPreloadPositions(const std::vector<osg::Vec3f> &positions)
+    bool CellPreloader::getTerrainPreloadInProgress(int& progress, int& progressRange, double timestamp)
+    {
+        if (!mTerrainPreloadItem)
+            return false;
+        else if (mTerrainPreloadItem->isDone())
+        {
+            mTerrainPreloadItem->storeViews(timestamp);
+            mTerrainPreloadItem = nullptr;
+            return false;
+        }
+        else
+        {
+            progress = mTerrainPreloadItem->getProgress();
+            progressRange = mTerrainPreloadItem->getProgressRange();
+            return !progress || progress < progressRange;
+        }
+    }
+
+    void CellPreloader::abortTerrainPreloadExcept(const osg::Vec3f& exceptPos)
     {
         if (mTerrainPreloadItem && !mTerrainPreloadItem->isDone())
+        {
+            const float resetThreshold = ESM::Land::REAL_SIZE;
+            for (auto pos : mTerrainPreloadPositions)
+                if ((pos.first-exceptPos).length2() < resetThreshold*resetThreshold)
+                    return;
+            mTerrainPreloadItem->abort();
+            mTerrainPreloadItem->waitTillDone();
+            mTerrainPreloadItem = nullptr;
+        }
+    }
+
+    bool contains(const std::vector<CellPreloader::PositionCellGrid>& container, const std::vector<CellPreloader::PositionCellGrid>& contained)
+    {
+        for (auto pos : contained)
+        {
+            bool found = false;
+            for (auto pos2 : container)
+            {
+                if ((pos.first-pos2.first).length2() < 1 && pos.second == pos2.second)
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) return false;
+        }
+        return true;
+    }
+
+    void CellPreloader::setTerrainPreloadPositions(const std::vector<CellPreloader::PositionCellGrid> &positions)
+    {
+        if (positions.empty())
+            mTerrainPreloadPositions.clear();
+        else if (contains(mTerrainPreloadPositions, positions))
             return;
-        else if (positions == mTerrainPreloadPositions)
+        if (mTerrainPreloadItem && !mTerrainPreloadItem->isDone())
             return;
         else
         {
@@ -436,8 +505,11 @@ namespace MWWorld
             }
 
             mTerrainPreloadPositions = positions;
-            mTerrainPreloadItem = new TerrainPreloadItem(mTerrainViews, mTerrain, positions);
-            mWorkQueue->addWorkItem(mTerrainPreloadItem);
+            if (!positions.empty())
+            {
+                mTerrainPreloadItem = new TerrainPreloadItem(mTerrainViews, mTerrain, positions);
+                mWorkQueue->addWorkItem(mTerrainPreloadItem);
+            }
         }
     }
 
