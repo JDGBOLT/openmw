@@ -197,6 +197,8 @@ osg::ref_ptr<osg::Node> ChunkManager::createChunk(float chunkSize, const osg::Ve
 
     geometry->createClusterCullingCallback();
 
+    geometry->setStateSet(mMultiPassRoot);
+
     if (useCompositeMap)
     {
         osg::ref_ptr<CompositeMap> compositeMap = new CompositeMap;
@@ -217,7 +219,6 @@ osg::ref_ptr<osg::Node> ChunkManager::createChunk(float chunkSize, const osg::Ve
     }
     else
     {
-        geometry->setStateSet(mMultiPassRoot);
         geometry->setPasses(createPasses(chunkSize, chunkCenter, false));
     }
 
