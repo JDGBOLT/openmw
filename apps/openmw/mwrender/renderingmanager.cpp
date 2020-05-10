@@ -1561,4 +1561,9 @@ namespace MWRender
         }
         return false;
     }
+    void RenderingManager::getPagedRefnums(const osg::Vec4i &activeGrid, std::set<ESM::RefNum> &out)
+    {
+        if (mObjectPaging)
+            mObjectPaging->getPagedRefnums(activeGrid, out);
+    }
 }
