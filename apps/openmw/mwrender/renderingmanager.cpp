@@ -1085,6 +1085,7 @@ namespace MWRender
     {
         RenderingManager::RayResult result;
         result.mHit = false;
+        result.mHitRefnum.mContentFile = -1;
         result.mRatio = 0;
         if (intersector->containsIntersections())
         {
@@ -1096,6 +1097,7 @@ namespace MWRender
             result.mRatio = intersection.ratio;
 
             PtrHolder* ptrHolder = nullptr;
+            std::vector<RefnumMarker*> refnumMarkers;
             for (osg::NodePath::const_iterator it = intersection.nodePath.begin(); it != intersection.nodePath.end(); ++it)
             {
                 osg::UserDataContainer* userDataContainer = (*it)->getUserDataContainer();
@@ -1105,11 +1107,25 @@ namespace MWRender
                 {
                     if (PtrHolder* p = dynamic_cast<PtrHolder*>(userDataContainer->getUserObject(i)))
                         ptrHolder = p;
+                    if (RefnumMarker* r = dynamic_cast<RefnumMarker*>(userDataContainer->getUserObject(i)))
+                        refnumMarkers.push_back(r);
                 }
             }
 
             if (ptrHolder)
                 result.mHitObject = ptrHolder->mPtr;
+
+            unsigned int vertexCounter = 0;
+            for (unsigned int i=0; i<refnumMarkers.size(); ++i)
+            {
+                unsigned int intersectionIndex = intersection.indexList.empty() ? 0 : intersection.indexList[0];
+                if (!refnumMarkers[i]->mNumVertices || (intersectionIndex >= vertexCounter && intersectionIndex < vertexCounter + refnumMarkers[i]->mNumVertices))
+                {
+                    result.mHitRefnum = refnumMarkers[i]->mRefnum;
+                    break;
+                }
+                vertexCounter += refnumMarkers[i]->mNumVertices;
+            }
         }
 
         return result;
