@@ -1132,6 +1132,7 @@ namespace MWRender
             mIntersectionVisitor = new osgUtil::IntersectionVisitor;
 
         mIntersectionVisitor->setTraversalNumber(mViewer->getFrameStamp()->getFrameNumber());
+        mIntersectionVisitor->setFrameStamp(mViewer->getFrameStamp());
         mIntersectionVisitor->setIntersector(intersector);
 
         int mask = ~0;
