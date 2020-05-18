@@ -51,11 +51,12 @@ const vec2 poissonDisk[shadowSampleCount] = vec2[](
 vec2 findShadowOccluders(sampler2D shadowMap, vec3 coords, float receiver)
 {
     float searchDistance = min(maxSearchDistance, lightSizeFactor / receiver * (receiver - nearPlane));
+    float scaledDistance = searchDistance * coords.z;
     float depthSum = 0;
     int occluderCount = 0;
     for (int i = 0; i < shadowSampleCount; ++i)
     {
-        vec3 offset = vec3(poissonDisk[i] * searchDistance, 0);
+        vec3 offset = vec3(poissonDisk[i] * scaledDistance, 0);
         float depth = texture2DProj(shadowMap, coords + offset).r;
         if (depth < receiver)
         {
@@ -68,10 +69,11 @@ vec2 findShadowOccluders(sampler2D shadowMap, vec3 coords, float receiver)
 
 float percentageCloserFilter(sampler2D shadowMap, vec3 coords, float receiver, float filterRadius)
 {
+    float scaledRadius = filterRadius * coords.z;
     float sum = 0.0;
     for (int i = 0; i < shadowSampleCount; ++i)
     {
-        vec3 offset = vec3(poissonDisk[i] * filterRadius, 0);
+        vec3 offset = vec3(poissonDisk[i] * scaledRadius, 0);
         sum += float(receiver <= texture2DProj(shadowMap, coords + offset).r);
     }
     return sum / shadowSampleCount;
