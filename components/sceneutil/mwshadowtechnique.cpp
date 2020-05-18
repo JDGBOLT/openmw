@@ -538,7 +538,7 @@ MWShadowTechnique::ShadowData::ShadowData(MWShadowTechnique::ViewDependentData* 
     else
     {
         _texture->setInternalFormat(GL_DEPTH_COMPONENT);
-        _texture->setShadowComparison(true);
+        _texture->setShadowComparison(false);
         _texture->setShadowTextureMode(osg::Texture2D::LUMINANCE);
     }
 
