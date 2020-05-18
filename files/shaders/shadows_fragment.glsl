@@ -18,37 +18,24 @@ const float lightSizeFactor = 0.05;
 const float nearPlane = 0.4;
 const float maxSearchDistance = 0.01;
 const float maxFilterRadius = 0.01;
-const int shadowSampleCount = 25;
+const int shadowSampleCount = 16;
 
-const vec2 poissonDisk[shadowSampleCount] = vec2[](
-    vec2(0.513658, -0.361747),
-    vec2(0.7941055, -0.5156633),
-    vec2(0.4015315, 0.00368995),
-    vec2(0.2348373, -0.5646414),
-    vec2(0.08148332, -0.1521704),
-    vec2(0.9071004, -0.04301345),
-    vec2(0.5765684, -0.7820904),
-    vec2(0.02575831, -0.9248317),
-    vec2(-0.4247141, -0.7601865),
-    vec2(-0.1650984, -0.5609509),
-    vec2(-0.00553054, 0.4322597),
-    vec2(0.374622, 0.536724),
-    vec2(0.629549, 0.3171313),
-    vec2(-0.1453903, 0.8028749),
-    vec2(0.1050673, 0.9782572),
-    vec2(0.7705216, 0.6211317),
-    vec2(-0.5209134, -0.2073833),
-    vec2(-0.2157063, -0.05150497),
-    vec2(-0.7314271, -0.4448851),
-    vec2(-0.9658175, -0.08176702),
-    vec2(-0.6456084, 0.08727718),
-    vec2(0.4758473, 0.8578165),
-    vec2(-0.4970213, 0.3748735),
-    vec2(-0.79823, 0.4584326),
-    vec2(-0.4652869, 0.7911729)
-);
+float interleavedGradientNoise(vec2 position)
+{
+    const vec2 magicVector = vec2(0.06711056, 0.00583715);
+    const float magicScalar = 52.9829189;
+    return fract(magicScalar * fract(dot(position, magicVector)));
+}
 
-vec2 findShadowOccluders(sampler2D shadowMap, vec3 coords, float receiver)
+vec2 vogelDisk(int index, float phi)
+{
+    const float goldenAngle = 2.39996322972865332;
+    float r = sqrt(index + 0.5) / sqrt(shadowSampleCount);
+    float theta = index * goldenAngle + phi;
+    return vec2(r * cos(theta), r * sin(theta));
+}
+
+vec2 findShadowOccluders(sampler2D shadowMap, vec3 coords, float receiver, float phi)
 {
     float searchDistance = min(maxSearchDistance, lightSizeFactor / receiver * (receiver - nearPlane));
     float scaledDistance = searchDistance * coords.z;
@@ -56,7 +43,7 @@ vec2 findShadowOccluders(sampler2D shadowMap, vec3 coords, float receiver)
     int occluderCount = 0;
     for (int i = 0; i < shadowSampleCount; ++i)
     {
-        vec3 offset = vec3(poissonDisk[i] * scaledDistance, 0);
+        vec3 offset = vec3(vogelDisk(i, phi) * scaledDistance, 0);
         float depth = texture2DProj(shadowMap, coords + offset).r;
         if (depth < receiver)
         {
@@ -67,13 +54,13 @@ vec2 findShadowOccluders(sampler2D shadowMap, vec3 coords, float receiver)
     return vec2(depthSum / occluderCount, occluderCount);
 }
 
-float percentageCloserFilter(sampler2D shadowMap, vec3 coords, float receiver, float filterRadius)
+float percentageCloserFilter(sampler2D shadowMap, vec3 coords, float receiver, float filterRadius, float phi)
 {
     float scaledRadius = filterRadius * coords.z;
     float sum = 0.0;
     for (int i = 0; i < shadowSampleCount; ++i)
     {
-        vec3 offset = vec3(poissonDisk[i] * scaledRadius, 0);
+        vec3 offset = vec3(vogelDisk(i, phi) * scaledRadius, 0);
         sum += float(receiver <= texture2DProj(shadowMap, coords + offset).r);
     }
     return sum / shadowSampleCount;
@@ -81,9 +68,10 @@ float percentageCloserFilter(sampler2D shadowMap, vec3 coords, float receiver, f
 
 float sampleShadow(sampler2D shadowMap, vec4 coords)
 {
+    float phi = interleavedGradientNoise(gl_FragCoord.xy);
     float receiverDepth = min(coords.z / coords.w, 1);
     vec3 coordsProj = coords.xyw;
-    vec2 occluders = findShadowOccluders(shadowMap, coordsProj, receiverDepth);
+    vec2 occluders = findShadowOccluders(shadowMap, coordsProj, receiverDepth, phi);
     if (occluders.y == 0)
     {
         return 1.0;
@@ -93,7 +81,7 @@ float sampleShadow(sampler2D shadowMap, vec4 coords)
     float penumbra = (receiverDepth - meanDepth) / meanDepth;
     float filterRadius = penumbra * lightSizeFactor * nearPlane / receiverDepth;
     filterRadius = min(filterRadius, maxFilterRadius);
-    return percentageCloserFilter(shadowMap, coordsProj, receiverDepth, filterRadius);
+    return percentageCloserFilter(shadowMap, coordsProj, receiverDepth, filterRadius, phi);
 }
 #endif
 
