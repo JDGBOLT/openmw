@@ -184,6 +184,8 @@ class CharacterController : public MWRender::Animation::TextKeyListener
     float mSecondsOfSwimming;
     float mSecondsOfRunning;
 
+    float mSwimmingPitch;
+
     MWWorld::ConstPtr mHeadTrackTarget;
 
     float mTurnAnimationThreshold; // how long to continue playing turning animation after actor stopped turning
