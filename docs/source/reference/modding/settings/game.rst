@@ -343,7 +343,7 @@ Makes difference only if 'turn to movement direction' is enabled. Modifies turni
 This setting can only be configured by editing the settings configuration file.
 
 swim upward coef
--------------------------------------
+----------------
 
 :Type:		floating point
 :Range:		-1.0 to 1.0

@@ -82,8 +82,9 @@ namespace MWRender
         MWWorld::Ptr getTrackingPtr() const;
 
         void setThirdPersonViewMode(ThirdPersonViewMode mode) { mThirdPersonMode = mode; }
-        void setOverShoulderHorizontalOffset(float v);
+        ThirdPersonViewMode getThirdPersonViewMode() const { return mThirdPersonMode; }
 
+        void setOverShoulderHorizontalOffset(float v);
         void switchToLeftShoulder();
         void switchToRightShoulder();
         void switchToDefaultShoulder();
