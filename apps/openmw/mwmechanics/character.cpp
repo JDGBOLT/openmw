@@ -2240,6 +2240,13 @@ void CharacterController::update(float duration, bool animationOnly)
             mSwimmingPitch += targetSwimmingPitch > mSwimmingPitch ? swimPitchDelta : -swimPitchDelta;
             mAnimation->setBodyPitchRadians(mSwimmingPitch);
         }
+        if (inwater && isPlayer && !isFirstPersonPlayer)
+        {
+            static const float swimUpwardCoef = Settings::Manager::getFloat("swim upward coef", "Game");
+            static const float swimForwardCoef = sqrtf(1.0f - swimUpwardCoef * swimUpwardCoef);
+            vec.z() = std::abs(vec.y()) * swimUpwardCoef;
+            vec.y() *= swimForwardCoef;
+        }
 
         // Player can not use smooth turning as NPCs, so we play turning animation a bit to avoid jittering
         if (isPlayer)
