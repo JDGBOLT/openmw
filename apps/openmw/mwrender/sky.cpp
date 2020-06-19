@@ -10,7 +10,6 @@
 #include <osg/Material>
 #include <osg/TexEnvCombine>
 #include <osg/TexMat>
-#include <osg/OcclusionQueryNode>
 #include <osg/ColorMask>
 #include <osg/PositionAttitudeTransform>
 #include <osg/BlendFunc>
@@ -30,7 +29,7 @@
 #include <osgParticle/ModularProgram>
 
 #include <components/misc/rng.hpp>
-
+#include <components/sceneutil/occlusionquerynode.hpp>
 #include <components/misc/resourcehelpers.hpp>
 
 #include <components/resource/scenemanager.hpp>
@@ -554,14 +553,18 @@ private:
     };
 
     /// @param queryVisible If true, queries the amount of visible pixels. If false, queries the total amount of pixels.
-    osg::ref_ptr<osg::OcclusionQueryNode> createOcclusionQueryNode(osg::Group* parent, bool queryVisible)
+    osg::ref_ptr<SceneUtil::StaticOcclusionQueryNode> createOcclusionQueryNode(osg::Group* parent, bool queryVisible)
     {
-        osg::ref_ptr<osg::OcclusionQueryNode> oqn = new osg::OcclusionQueryNode;
-        oqn->setQueriesEnabled(true);
+        osg::ref_ptr<SceneUtil::StaticOcclusionQueryNode> oqn = new SceneUtil::StaticOcclusionQueryNode;
+
+        //force validity of query geometry
+        oqn->addChild(mGeom);
+        oqn->getBound();
+        oqn->removeChildren(0,1);
 
 #if OSG_VERSION_GREATER_OR_EQUAL(3, 6, 5)
         // With OSG 3.6.5, the method of providing user defined query geometry has been completely replaced
-        osg::ref_ptr<osg::QueryGeometry> queryGeom = new osg::QueryGeometry(oqn->getName());
+        osg::ref_ptr<osg::QueryGeometry> queryGeom = new SceneUtil::MWQueryGeometry();
 #else
         osg::ref_ptr<osg::QueryGeometry> queryGeom = oqn->getQueryGeometry();
 #endif
@@ -575,18 +578,24 @@ private:
         // Set up the query geometry to match the actual sun's rendering shape. osg::OcclusionQueryNode wasn't originally intended to allow this,
         // normally it would automatically adjust the query geometry to match the sub graph's bounding box. The below hack is needed to
         // circumvent this.
+        osg::Geometry* debugGeom = oqn->getDebugGeometry();
         queryGeom->setVertexArray(mGeom->getVertexArray());
         queryGeom->setTexCoordArray(0, mGeom->getTexCoordArray(0), osg::Array::BIND_PER_VERTEX);
         queryGeom->removePrimitiveSet(0, queryGeom->getNumPrimitiveSets());
         queryGeom->addPrimitiveSet(mGeom->getPrimitiveSet(0));
 
-        // Hack to disable unwanted awful code inside OcclusionQueryNode::computeBound.
+        debugGeom->setVertexArray(mGeom->getVertexArray());
+        debugGeom->setTexCoordArray(0, mGeom->getTexCoordArray(0), osg::Array::BIND_PER_VERTEX);
+        debugGeom->removePrimitiveSet(0, debugGeom->getNumPrimitiveSets());
+        debugGeom->addPrimitiveSet(mGeom->getPrimitiveSet(0));
+
+        // don't update querygeometry
         oqn->setComputeBoundingSphereCallback(new DummyComputeBoundCallback);
         // Still need a proper bounding sphere.
         oqn->setInitialBound(queryGeom->getBound());
 
 #if OSG_VERSION_GREATER_OR_EQUAL(3, 6, 5)
-        oqn->setQueryGeometry(queryGeom.release());
+        oqn->setQueryGeometry(queryGeom);
 #endif
 
         osg::StateSet* queryStateSet = new osg::StateSet;
@@ -717,7 +726,7 @@ private:
     class OcclusionCallback : public osg::NodeCallback
     {
     public:
-        OcclusionCallback(osg::ref_ptr<osg::OcclusionQueryNode> oqnVisible, osg::ref_ptr<osg::OcclusionQueryNode> oqnTotal)
+        OcclusionCallback(SceneUtil::StaticOcclusionQueryNode* oqnVisible, SceneUtil::StaticOcclusionQueryNode* oqnTotal)
             : mOcclusionQueryVisiblePixels(oqnVisible)
             , mOcclusionQueryTotalPixels(oqnTotal)
         {
@@ -726,8 +735,8 @@ private:
     protected:
         float getVisibleRatio (osg::Camera* camera)
         {
-            int visible = mOcclusionQueryVisiblePixels->getQueryGeometry()->getNumPixels(camera);
-            int total = mOcclusionQueryTotalPixels->getQueryGeometry()->getNumPixels(camera);
+            int visible = static_cast<const SceneUtil::MWQueryGeometry*>(mOcclusionQueryVisiblePixels->getQueryGeometry())->getNumPixels(camera);
+            int total = static_cast<const SceneUtil::MWQueryGeometry*>(mOcclusionQueryTotalPixels->getQueryGeometry())->getNumPixels(camera);
 
             float visibleRatio = 0.f;
             if (total > 0)
@@ -750,8 +759,8 @@ private:
         }
 
     private:
-        osg::ref_ptr<osg::OcclusionQueryNode> mOcclusionQueryVisiblePixels;
-        osg::ref_ptr<osg::OcclusionQueryNode> mOcclusionQueryTotalPixels;
+        osg::ref_ptr<SceneUtil::StaticOcclusionQueryNode> mOcclusionQueryVisiblePixels;
+        osg::ref_ptr<SceneUtil::StaticOcclusionQueryNode> mOcclusionQueryTotalPixels;
 
         std::map<osg::observer_ptr<osg::Camera>, float> mLastRatio;
     };
@@ -760,7 +769,7 @@ private:
     class SunFlashCallback : public OcclusionCallback
     {
     public:
-        SunFlashCallback(osg::ref_ptr<osg::OcclusionQueryNode> oqnVisible, osg::ref_ptr<osg::OcclusionQueryNode> oqnTotal)
+        SunFlashCallback(SceneUtil::StaticOcclusionQueryNode* oqnVisible, SceneUtil::StaticOcclusionQueryNode* oqnTotal)
             : OcclusionCallback(oqnVisible, oqnTotal)
             , mGlareView(1.f)
         {
@@ -832,7 +841,7 @@ private:
     class SunGlareCallback : public OcclusionCallback
     {
     public:
-        SunGlareCallback(osg::ref_ptr<osg::OcclusionQueryNode> oqnVisible, osg::ref_ptr<osg::OcclusionQueryNode> oqnTotal,
+        SunGlareCallback(SceneUtil::StaticOcclusionQueryNode* oqnVisible, SceneUtil::StaticOcclusionQueryNode* oqnTotal,
                          osg::ref_ptr<osg::PositionAttitudeTransform> sunTransform)
             : OcclusionCallback(oqnVisible, oqnTotal)
             , mSunTransform(sunTransform)
@@ -925,8 +934,8 @@ private:
     osg::ref_ptr<osg::Node> mSunFlashNode;
     osg::ref_ptr<SunGlareCallback> mSunGlareCallback;
     osg::ref_ptr<osg::Node> mSunGlareNode;
-    osg::ref_ptr<osg::OcclusionQueryNode> mOcclusionQueryVisiblePixels;
-    osg::ref_ptr<osg::OcclusionQueryNode> mOcclusionQueryTotalPixels;
+    osg::ref_ptr<SceneUtil::StaticOcclusionQueryNode> mOcclusionQueryVisiblePixels;
+    osg::ref_ptr<SceneUtil::StaticOcclusionQueryNode> mOcclusionQueryTotalPixels;
 };
 
 class Moon : public CelestialBody
@@ -1143,7 +1152,7 @@ SkyManager::SkyManager(osg::Group* parentNode, Resource::SceneManager* sceneMana
     // Assign empty program to specify we don't want shaders
     // The shaders generated by the SceneManager can't handle everything we need
     skyroot->getOrCreateStateSet()->setAttributeAndModes(new osg::Program(), osg::StateAttribute::OVERRIDE|osg::StateAttribute::PROTECTED|osg::StateAttribute::ON);
-    SceneUtil::ShadowManager::disableShadowsForStateSet(skyroot->getOrCreateStateSet());
+    SceneUtil::ShadowManager::get()->disableShadowsForStateSet(skyroot->getOrCreateStateSet());
 
     skyroot->setNodeMask(Mask_Sky);
     parentNode->addChild(skyroot);
@@ -1422,7 +1431,7 @@ public:
         osg::Matrix toWorld, toLocal;
 
         std::vector<osg::Matrix> worldMatrices = ps->getWorldMatrices();
- 
+
         if (!worldMatrices.empty())
         {
             toWorld = worldMatrices[0];
@@ -1754,7 +1763,7 @@ void SkyManager::setWeather(const WeatherResult& weather)
                 for (unsigned int i = 0; i < findPSVisitor.mFoundNodes.size(); ++i)
                 {
                     osgParticle::ParticleSystem *ps = static_cast<osgParticle::ParticleSystem *>(findPSVisitor.mFoundNodes[i]);
-                    
+
                     osg::ref_ptr<osgParticle::ModularProgram> program (new osgParticle::ModularProgram);
                     program->addOperator(new WrapAroundOperator(mCamera,osg::Vec3(1024,1024,800)));
                     program->setParticleSystem(ps);

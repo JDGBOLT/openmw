@@ -14,6 +14,8 @@
 #include "defs.hpp"
 #include "cellborder.hpp"
 
+#include <components/sceneutil/occlusionsettings.hpp>
+
 namespace osg
 {
     class Group;
@@ -105,8 +107,11 @@ namespace Terrain
         /// @param storage Storage instance to get terrain data from (heights, normals, colors, textures..)
         /// @param nodeMask mask for the terrain root
         /// @param preCompileMask mask for pre compiling textures
-        World(osg::Group* parent, osg::Group* compileRoot, Resource::ResourceSystem* resourceSystem, Storage* storage, int nodeMask, int preCompileMask, int borderMask);
+        World(osg::Group* parent, osg::Group* compileRoot, Resource::ResourceSystem* resourceSystem, Storage* storage,
+              unsigned int nodeMask, const SceneUtil::OcclusionQuerySettings& oqsettings, unsigned int preCompileMask, unsigned int borderMask);
         virtual ~World();
+
+        virtual void resetSettings();
 
         /// Set a WorkQueue to delete objects in the background thread.
         void setWorkQueue(SceneUtil::WorkQueue* workQueue);
@@ -182,11 +187,13 @@ namespace Terrain
         std::unique_ptr<CellBorder> mCellBorder;
 
         bool mBorderVisible;
+        unsigned int mTerrainNodeMask;
 
         std::set<std::pair<int,int>> mLoadedCells;
         osg::ref_ptr<HeightCullCallback> mHeightCullCallback;
 
         osg::Vec4i mActiveGrid;
+        SceneUtil::OcclusionQuerySettings mOQNSettings;
     };
 }
 

@@ -3,6 +3,7 @@
 
 #include "world.hpp"
 #include "terraingrid.hpp"
+#include "viewdata.hpp"
 
 #include <OpenThreads/Mutex>
 
@@ -20,7 +21,9 @@ namespace Terrain
     class QuadTreeWorld : public TerrainGrid // note: derived from TerrainGrid is only to render default cells (see loadCell)
     {
     public:
-        QuadTreeWorld(osg::Group* parent, osg::Group* compileRoot, Resource::ResourceSystem* resourceSystem, Storage* storage, int nodeMask, int preCompileMask, int borderMask, int compMapResolution, float comMapLevel, float lodFactor, int vertexLodMod, float maxCompGeometrySize);
+        QuadTreeWorld(osg::Group* parent, osg::Group* compileRoot, Resource::ResourceSystem* resourceSystem, Storage* storage,
+                      unsigned int nodeMask, const SceneUtil::OcclusionQuerySettings& oqsettings, unsigned int preCompileMask, unsigned int borderMask,
+                      unsigned int compMapResolution, float comMapLevel, float lodFactor, int vertexLodMod, float maxCompGeometrySize);
 
         ~QuadTreeWorld();
 
@@ -55,6 +58,7 @@ namespace Terrain
     private:
         void ensureQuadTreeBuilt();
 
+        void loadRenderingNode(ViewData::Entry& entry, ViewData* vd, int vertexLodMod, float cellWorldSize, const osg::Vec4i &gridbounds, const std::vector<QuadTreeWorld::ChunkManager*>& chunkManagers, bool compile);
         osg::ref_ptr<RootNode> mRootNode;
 
         osg::ref_ptr<ViewDataMap> mViewDataMap;
