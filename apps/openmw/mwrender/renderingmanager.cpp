@@ -726,7 +726,7 @@ namespace MWRender
 
     void RenderingManager::setWaterHeight(float height)
     {
-        mWater->setCullCallback(mTerrain->getHeightCullCallback(height, Mask_Water));
+        //mWater->setCullCallback(mTerrain->getHeightCullCallback(height, Mask_Water));
         mWater->setHeight(height);
         mSky->setWaterHeight(height);
     }

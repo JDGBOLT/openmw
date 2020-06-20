@@ -488,13 +488,13 @@ if [ -z $SKIP_DOWNLOAD ]; then
 
 	# OSG
 	download "OpenSceneGraph 3.6.5" \
-		"https://rgw.ctrl-c.liu.se/openmw/Deps/OSG-3.6.5-msvc${MSVC_REAL_YEAR}-win${BITS}.7z" \
-		"OSG-3.6.5-msvc${MSVC_REAL_YEAR}-win${BITS}.7z"
+		"https://rgw.ctrl-c.liu.se/openmw/Deps/OSG-3.4.2-experimental-msvc${MSVC_REAL_YEAR}-win${BITS}.7z" \
+		"OSG-3.4.2-experimental-msvc${MSVC_REAL_YEAR}-win${BITS}.7z"
 
 	if [ -n "$PDBS" ]; then
 		download "OpenSceneGraph symbols" \
-			"https://rgw.ctrl-c.liu.se/openmw/Deps/OSG-3.6.5-msvc${MSVC_REAL_YEAR}-win${BITS}-sym.7z" \
-			"OSG-3.6.5-msvc${MSVC_REAL_YEAR}-win${BITS}-sym.7z"
+			"https://rgw.ctrl-c.liu.se/openmw/Deps/OSG-3.4.2--experimental-msvc${MSVC_REAL_YEAR}-win${BITS}-sym.7z" \
+			"OSG-3.4.2-experimental-msvc${MSVC_REAL_YEAR}-win${BITS}-sym.7z"
 	fi
 
 	# Qt
@@ -688,20 +688,20 @@ printf "OpenAL-Soft 1.20.1... "
 cd $DEPS
 echo
 # OSG
-printf "OSG 3.6.5... "
+printf "OSG 3.4.2... "
 {
 	cd $DEPS_INSTALL
 	if [ -d OSG ] && \
 		grep "OPENSCENEGRAPH_MAJOR_VERSION    3" OSG/include/osg/Version > /dev/null && \
-		grep "OPENSCENEGRAPH_MINOR_VERSION    6" OSG/include/osg/Version > /dev/null && \
-		grep "OPENSCENEGRAPH_PATCH_VERSION    5" OSG/include/osg/Version > /dev/null
+		grep "OPENSCENEGRAPH_MINOR_VERSION    4" OSG/include/osg/Version > /dev/null && \
+		grep "OPENSCENEGRAPH_PATCH_VERSION    2" OSG/include/osg/Version > /dev/null
 	then
 		printf "Exists. "
 	elif [ -z $SKIP_EXTRACT ]; then
 		rm -rf OSG
-		eval 7z x -y "${DEPS}/OSG-3.6.5-msvc${MSVC_REAL_YEAR}-win${BITS}.7z" $STRIP
-		[ -n "$PDBS" ] && eval 7z x -y "${DEPS}/OSG-3.6.5-msvc${MSVC_REAL_YEAR}-win${BITS}-sym.7z" $STRIP
-		mv "OSG-3.6.5-msvc${MSVC_REAL_YEAR}-win${BITS}" OSG
+		eval 7z x -y "${DEPS}/OSG-3.4.2-experimental-msvc${MSVC_REAL_YEAR}-win${BITS}.7z" $STRIP
+		[ -n "$PDBS" ] && eval 7z x -y "${DEPS}/OSG-3.4.2-experimental-msvc${MSVC_REAL_YEAR}-win${BITS}-sym.7z" $STRIP
+		mv "OSG-3.4.2-experimental-msvc${MSVC_REAL_YEAR}-win${BITS}" OSG
 	fi
 	OSG_SDK="$(real_pwd)/OSG"
 	add_cmake_opts -DOSG_DIR="$OSG_SDK"
@@ -712,8 +712,8 @@ printf "OSG 3.6.5... "
 	fi
 	add_runtime_dlls "$(pwd)/OSG/bin/"{OpenThreads,zlib,libpng}${SUFFIX}.dll \
 		"$(pwd)/OSG/bin/osg"{,Animation,DB,FX,GA,Particle,Text,Util,Viewer,Shadow}${SUFFIX}.dll
-	add_osg_dlls "$(pwd)/OSG/bin/osgPlugins-3.6.5/osgdb_"{bmp,dds,freetype,jpeg,osg,png,tga}${SUFFIX}.dll
-	add_osg_dlls "$(pwd)/OSG/bin/osgPlugins-3.6.5/osgdb_serializers_osg"{,animation,fx,ga,particle,text,util,viewer,shadow}${SUFFIX}.dll
+	add_osg_dlls "$(pwd)/OSG/bin/osgPlugins-3.4.2/osgdb_"{bmp,dds,freetype,jpeg,osg,png,tga}${SUFFIX}.dll
+	add_osg_dlls "$(pwd)/OSG/bin/osgPlugins-3.4.2/osgdb_serializers_osg"{,animation,fx,ga,particle,text,util,viewer,shadow}${SUFFIX}.dll
 	echo Done.
 }
 cd $DEPS
@@ -923,10 +923,10 @@ fi
 	done
 	echo
 	echo "- OSG Plugin DLLs..."
-	mkdir -p ${DLL_PREFIX}osgPlugins-3.6.5
+	mkdir -p ${DLL_PREFIX}osgPlugins-3.4.2
 	for DLL in $OSG_PLUGINS; do
 		echo "    $(basename $DLL)."
-		cp "$DLL" ${DLL_PREFIX}osgPlugins-3.6.5
+		cp "$DLL" ${DLL_PREFIX}osgPlugins-3.4.2
 	done
 	echo
 	echo "- Qt Platform DLLs..."
