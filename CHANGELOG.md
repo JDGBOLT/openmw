@@ -1,6 +1,7 @@
 0.47.0
 ------
 
+    Bug #1662: Qt4 and Windows binaries crash if there's a non-ASCII character in a file path/config path
     Bug #1952: Incorrect particle lighting
     Bug #2311: Targeted scripts are not properly supported on non-unique RefIDs
     Bug #3676: NiParticleColorModifier isn't applied properly
@@ -28,9 +29,12 @@
     Bug #5441: Enemies can't push a player character when in critical strike stance
     Bug #5451: Magic projectiles don't disappear with the caster
     Bug #5452: Autowalk is being included in savegames
+    Feature #390: 3rd person look "over the shoulder"
     Feature #5297: Add a search function to the "Datafiles" tab of the OpenMW launcher
     Feature #5362: Show the soul gems' trapped soul in count dialog
     Feature #5445: Handle NiLines
+    Feature #5457: Realistic diagonal movement
+    Task #5480: Drop Qt4 support
 
 0.46.0
 ------
