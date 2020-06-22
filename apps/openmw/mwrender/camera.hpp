@@ -70,6 +70,9 @@ namespace MWRender
         osg::Vec2d mFocalPointCurrentOffset;
         float mFocalPointTransitionSpeed;
 
+        float mSmoothedSpeed;
+        float mZoomOutWhenMoveCoef;
+
         void updateFocalPointOffset(float duration);
         float getCameraDistanceCorrection() const;
 
@@ -88,6 +91,8 @@ namespace MWRender
         void switchToLeftShoulder();
         void switchToRightShoulder();
         void switchToDefaultShoulder();
+
+        void setZoomOutWhenMoveCoef(float v) { mZoomOutWhenMoveCoef = v; }
 
         /// Update the view matrix of \a cam
         void updateCamera(osg::Camera* cam);

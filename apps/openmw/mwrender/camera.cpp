@@ -67,7 +67,8 @@ namespace MWRender
       mDefaultShoulderIsRight(true),
       mThirdPersionOffsetType(ThirdPersonOffsetType::RightShoulder),
       mFocalPointCurrentOffset(osg::Vec2d()),
-      mFocalPointTransitionSpeed(1.f)
+      mFocalPointTransitionSpeed(1.f),
+      mSmoothedSpeed(0.f)
     {
         mVanity.enabled = false;
         mVanity.allowed = true;
@@ -215,6 +216,13 @@ namespace MWRender
         }
 
         updateFocalPointOffset(duration);
+
+        float speed = mTrackingPtr.getClass().getSpeed(mTrackingPtr);
+        float delta = speed - mSmoothedSpeed;
+        float maxDelta = 100.f * duration;
+        delta = std::min(delta, maxDelta);
+        delta = std::max(delta, -maxDelta);
+        mSmoothedSpeed += delta;
     }
 
     void Camera::setOverShoulderHorizontalOffset(float v)
@@ -477,7 +485,18 @@ namespace MWRender
 
     float Camera::getCameraDistanceCorrection() const
     {
-        return mThirdPersonMode != ThirdPersonViewMode::Standard ? std::max(-getPitch(), 0.f) * 50.f : 0;
+        if (mThirdPersonMode == ThirdPersonViewMode::Standard)
+            return 0;
+        else
+        {
+            float pitchCorrection = std::max(-getPitch(), 0.f) * 50.f;
+
+            float baseSpeed = 300.f; // For this the speedCorrection is mZoomOutWhenMoveCoef * 0.5
+            float smoothedSpeedSqr = mSmoothedSpeed * mSmoothedSpeed;
+            float speedCorrection = smoothedSpeedSqr / (smoothedSpeedSqr + baseSpeed*baseSpeed) * mZoomOutWhenMoveCoef;
+
+            return pitchCorrection + speedCorrection;
+        }
     }
 
     void Camera::setCameraDistance()
