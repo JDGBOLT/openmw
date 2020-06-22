@@ -423,6 +423,7 @@ namespace MWRender
         else
             mCamera->setThirdPersonViewMode(Camera::ThirdPersonViewMode::Standard);
         mCamera->setOverShoulderHorizontalOffset(Settings::Manager::getFloat("view over shoulder horizontal offset", "Camera"));
+        mCamera->setZoomOutWhenMoveCoef(Settings::Manager::getFloat("zoom out when move coef", "Camera"));
     }
 
     osgUtil::IncrementalCompileOperation* RenderingManager::getIncrementalCompileOperation()

@@ -849,6 +849,7 @@ CharacterController::CharacterController(const MWWorld::Ptr &ptr, MWRender::Anim
     , mSkipAnim(false)
     , mSecondsOfSwimming(0)
     , mSecondsOfRunning(0)
+    , mSwimmingPitch(0)
     , mTurnAnimationThreshold(0)
     , mAttackingOrSpell(false)
     , mCastingManualSpell(false)
@@ -1913,6 +1914,7 @@ void CharacterController::update(float duration, bool animationOnly)
         mTimeUntilWake -= duration;
 
     bool isPlayer = mPtr == MWMechanics::getPlayer();
+    bool isFirstPersonPlayer = isPlayer && MWBase::Environment::get().getWorld()->isFirstPerson();
     bool godmode = isPlayer && MWBase::Environment::get().getWorld()->getGodModeState();
 
     float scale = mPtr.getCellRef().getScale();
@@ -1977,7 +1979,7 @@ void CharacterController::update(float duration, bool animationOnly)
         float effectiveRotation = rot.z();
         static const bool turnToMovementDirection = Settings::Manager::getBool("turn to movement direction", "Game");
         static const float turnToMovementDirectionSpeedCoef = Settings::Manager::getFloat("turn to movement direction speed coef", "Game");
-        if (turnToMovementDirection && !(isPlayer && MWBase::Environment::get().getWorld()->isFirstPerson()))
+        if (turnToMovementDirection && !isFirstPersonPlayer)
         {
             float targetMovementAngle = vec.y() >= 0 ? std::atan2(-vec.x(), vec.y()) : std::atan2(vec.x(), -vec.y());
             movementSettings.mIsStrafing = (stats.getDrawState() != MWMechanics::DrawState_Nothing || inwater)
@@ -2202,8 +2204,7 @@ void CharacterController::update(float duration, bool animationOnly)
 
                 // It seems only bipedal actors use turning animations.
                 // Also do not use turning animations in the first-person view and when sneaking.
-                bool isFirstPlayer = isPlayer && MWBase::Environment::get().getWorld()->isFirstPerson();
-                if (!sneak && jumpstate == JumpState_None && !isFirstPlayer && mPtr.getClass().isBipedal(mPtr))
+                if (!sneak && jumpstate == JumpState_None && !isFirstPersonPlayer && mPtr.getClass().isBipedal(mPtr))
                 {
                     if(effectiveRotation > rotationThreshold)
                         movestate = inwater ? CharState_SwimTurnRight : CharState_TurnRight;
@@ -2225,6 +2226,26 @@ void CharacterController::update(float duration, bool animationOnly)
 
             if (!sound.empty())
                 sndMgr->playSound3D(mPtr, sound, 1.f, 1.f, MWSound::Type::Foot, MWSound::PlayMode::NoPlayerLocal);
+        }
+
+        if (turnToMovementDirection)
+        {
+            float targetSwimmingPitch;
+            if (inwater && vec.y() != 0 && !isFirstPersonPlayer && !movementSettings.mIsStrafing)
+                targetSwimmingPitch = -mPtr.getRefData().getPosition().rot[0];
+            else
+                targetSwimmingPitch = 0;
+            float maxSwimPitchDelta = 3.0f * duration * turnToMovementDirectionSpeedCoef;
+            float swimPitchDelta = std::min(maxSwimPitchDelta, std::abs(targetSwimmingPitch - mSwimmingPitch));
+            mSwimmingPitch += targetSwimmingPitch > mSwimmingPitch ? swimPitchDelta : -swimPitchDelta;
+            mAnimation->setBodyPitchRadians(mSwimmingPitch);
+        }
+        if (inwater && isPlayer && !isFirstPersonPlayer)
+        {
+            static const float swimUpwardCoef = Settings::Manager::getFloat("swim upward coef", "Game");
+            static const float swimForwardCoef = sqrtf(1.0f - swimUpwardCoef * swimUpwardCoef);
+            vec.z() = std::abs(vec.y()) * swimUpwardCoef;
+            vec.y() *= swimForwardCoef;
         }
 
         // Player can not use smooth turning as NPCs, so we play turning animation a bit to avoid jittering
