@@ -13,6 +13,7 @@
 #include <osg/ComputeBoundsVisitor>
 #include <osg/ShapeDrawable>
 #include <osg/TextureCubeMap>
+#include <osg/OcclusionQueryNode>
 
 #include <osgUtil/LineSegmentIntersector>
 
@@ -38,6 +39,7 @@
 #include <components/sceneutil/lightmanager.hpp>
 #include <components/sceneutil/statesetupdater.hpp>
 #include <components/sceneutil/positionattitudetransform.hpp>
+#include <components/sceneutil/occlusionquerynode.hpp>
 #include <components/sceneutil/workqueue.hpp>
 #include <components/sceneutil/unrefqueue.hpp>
 #include <components/sceneutil/writescene.hpp>
@@ -188,6 +190,62 @@ namespace MWRender
         Resource::ResourceSystem* mResourceSystem;
     };
 
+    void RenderingManager::resetShadowSettings(){
+        bool enableOQN=Settings::Manager::getBool("octree occlusion queries enable", "OcclusionQueries");
+
+        int shadowCastingTraversalMask = Mask_Scene;
+        if (enableOQN && Settings::Manager::getBool("shadow cams OQN enable", "OcclusionQueries"))
+            shadowCastingTraversalMask |= Mask_OcclusionQuery;
+        if (Settings::Manager::getBool("actor shadows", "Shadows"))
+            shadowCastingTraversalMask |= Mask_Actor;
+        if (Settings::Manager::getBool("player shadows", "Shadows"))
+            shadowCastingTraversalMask |= Mask_Player;
+        if (Settings::Manager::getBool("terrain shadows", "Shadows"))
+            shadowCastingTraversalMask |= Mask_Terrain;
+
+        int indoorShadowCastingTraversalMask = shadowCastingTraversalMask;
+        if (Settings::Manager::getBool("object shadows", "Shadows"))
+            shadowCastingTraversalMask |= (Mask_Object|Mask_Static);
+
+        SceneUtil::ShadowManager * shadowManager = SceneUtil::ShadowManager::get();
+        bool isIndoor=shadowManager->getShadowSettings()->getCastsShadowTraversalMask()==shadowManager->getIndoorShadowCastingMask();
+        shadowManager->setIndoorShadowCastingMask(indoorShadowCastingTraversalMask);
+        shadowManager->setOutdoorShadowCastingMask(shadowCastingTraversalMask);
+        shadowManager->setupShadowSettings();
+
+        if(isIndoor) { shadowManager->enableOutdoorMode(); shadowManager->enableIndoorMode();}
+        else { shadowManager->enableIndoorMode(); shadowManager->enableOutdoorMode(); }
+
+        shadowManager->getShadowTechnique()->setSceneMask(Mask_Scene | Mask_Lighting | Mask_Actor| Mask_ParticleSystem);
+        unsigned int computefarmask = Mask_Static | Mask_Object;
+
+        if (Settings::Manager::getBool("include terrain in far plane computation", "Shadows"))
+            computefarmask |= Mask_Terrain;// doesn't narrow enough far plane for distant terrain
+
+        shadowManager->getShadowTechnique()->setComputeFarMask(computefarmask);
+
+        if(enableOQN)
+        {
+            shadowManager->getShadowTechnique()->setOcclusionQueryMask(Mask_OcclusionQuery);
+        }
+        else
+        {
+            shadowManager->getShadowTechnique()->setOcclusionQueryMask(0);
+        }
+        Shader::ShaderManager::DefineMap shadowDefines = shadowManager->getShadowDefines();
+        Shader::ShaderManager::DefineMap globalDefines = mResourceSystem->getSceneManager()->getShaderManager().getGlobalDefines();
+
+        for (auto itr = shadowDefines.begin(); itr != shadowDefines.end(); itr++)
+            globalDefines[itr->first] = itr->second;
+
+        globalDefines["forcePPL"] = Settings::Manager::getBool("force per pixel lighting", "Shaders") ? "1" : "0";
+        globalDefines["clamp"] = Settings::Manager::getBool("clamp lighting", "Shaders") ? "1" : "0";
+        globalDefines["preLightEnv"] = Settings::Manager::getBool("apply lighting to environment maps", "Shaders") ? "1" : "0";
+        globalDefines["radialFog"] = Settings::Manager::getBool("radial fog", "Shaders") ? "1" : "0";
+
+        mResourceSystem->getSceneManager()->getShaderManager().setGlobalDefines(globalDefines);
+    }
+
     RenderingManager::RenderingManager(osgViewer::Viewer* viewer, osg::ref_ptr<osg::Group> rootNode,
                                        Resource::ResourceSystem* resourceSystem, SceneUtil::WorkQueue* workQueue,
                                        const std::string& resourcePath, DetourNavigator::Navigator& navigator)
@@ -221,33 +279,9 @@ namespace MWRender
         sceneRoot->setNodeMask(Mask_Scene);
         sceneRoot->setName("Scene Root");
 
-        int shadowCastingTraversalMask = Mask_Scene;
-        if (Settings::Manager::getBool("actor shadows", "Shadows"))
-            shadowCastingTraversalMask |= Mask_Actor;
-        if (Settings::Manager::getBool("player shadows", "Shadows"))
-            shadowCastingTraversalMask |= Mask_Player;
-        if (Settings::Manager::getBool("terrain shadows", "Shadows"))
-            shadowCastingTraversalMask |= Mask_Terrain;
-
-        int indoorShadowCastingTraversalMask = shadowCastingTraversalMask;
-        if (Settings::Manager::getBool("object shadows", "Shadows"))
-            shadowCastingTraversalMask |= (Mask_Object|Mask_Static);
-
-        mShadowManager.reset(new SceneUtil::ShadowManager(sceneRoot, mRootNode, shadowCastingTraversalMask, indoorShadowCastingTraversalMask, mResourceSystem->getSceneManager()->getShaderManager()));
-
-        Shader::ShaderManager::DefineMap shadowDefines = mShadowManager->getShadowDefines();
-        Shader::ShaderManager::DefineMap globalDefines = mResourceSystem->getSceneManager()->getShaderManager().getGlobalDefines();
-
-        for (auto itr = shadowDefines.begin(); itr != shadowDefines.end(); itr++)
-            globalDefines[itr->first] = itr->second;
-
-        globalDefines["forcePPL"] = Settings::Manager::getBool("force per pixel lighting", "Shaders") ? "1" : "0";
-        globalDefines["clamp"] = Settings::Manager::getBool("clamp lighting", "Shaders") ? "1" : "0";
-        globalDefines["preLightEnv"] = Settings::Manager::getBool("apply lighting to environment maps", "Shaders") ? "1" : "0";
-        globalDefines["radialFog"] = Settings::Manager::getBool("radial fog", "Shaders") ? "1" : "0";
-
-        // It is unnecessary to stop/start the viewer as no frames are being rendered yet.
-        mResourceSystem->getSceneManager()->getShaderManager().setGlobalDefines(globalDefines);
+        // singleton creation
+        SceneUtil::ShadowManager::get(sceneRoot, mRootNode, &mResourceSystem->getSceneManager()->getShaderManager());
+        resetShadowSettings();
 
         mNavMesh.reset(new NavMesh(mRootNode, Settings::Manager::getBool("enable nav mesh render", "Navigator")));
         mActorsPaths.reset(new ActorsPaths(mRootNode, Settings::Manager::getBool("enable agents paths render", "Navigator")));
@@ -285,7 +319,7 @@ namespace MWRender
             float maxCompGeometrySize = Settings::Manager::getFloat("max composite geometry size", "Terrain");
             maxCompGeometrySize = std::max(maxCompGeometrySize, 1.f);
             mTerrain.reset(new Terrain::QuadTreeWorld(
-                sceneRoot, mRootNode, mResourceSystem, mTerrainStorage, Mask_Terrain, Mask_PreCompile, Mask_Debug,
+                sceneRoot, mRootNode, mResourceSystem, mTerrainStorage, Mask_Terrain, mObjects->getOcclusionSettings(), Mask_PreCompile, Mask_Debug,
                 compMapResolution, compMapLevel, lodFactor, vertexLodMod, maxCompGeometrySize));
             if (Settings::Manager::getBool("object paging", "Terrain"))
             {
@@ -295,7 +329,7 @@ namespace MWRender
             }
         }
         else
-            mTerrain.reset(new Terrain::TerrainGrid(sceneRoot, mRootNode, mResourceSystem, mTerrainStorage, Mask_Terrain, Mask_PreCompile, Mask_Debug));
+            mTerrain.reset(new Terrain::TerrainGrid(sceneRoot, mRootNode, mResourceSystem, mTerrainStorage, Mask_Terrain, mObjects->getOcclusionSettings(), Mask_PreCompile, Mask_Debug));
 
         mTerrain->setTargetFrameRate(Settings::Manager::getFloat("target framerate", "Cells"));
         mTerrain->setWorkQueue(mWorkQueue.get());
@@ -356,6 +390,8 @@ namespace MWRender
         mViewer->getCamera()->setCullMask(~(Mask_UpdateVisitor|Mask_SimpleWater));
         NifOsg::Loader::setHiddenNodeMask(Mask_UpdateVisitor);
         NifOsg::Loader::setIntersectionDisabledNodeMask(Mask_Effect);
+
+        SceneUtil::StaticOcclusionQueryNode::defaultMainCamera =  mViewer->getCamera();
 
         mNearClip = Settings::Manager::getFloat("near clip", "Camera");
         mViewDistance = Settings::Manager::getFloat("viewing distance", "Camera");
@@ -540,9 +576,9 @@ namespace MWRender
     {
         mSky->setEnabled(enabled);
         if (enabled)
-            mShadowManager->enableOutdoorMode();
+            SceneUtil::ShadowManager::get()->enableOutdoorMode();
         else
-            mShadowManager->enableIndoorMode();
+            SceneUtil::ShadowManager::get()->enableIndoorMode();
     }
 
     bool RenderingManager::toggleBorders()
@@ -851,7 +887,7 @@ namespace MWRender
         for (int i = 0; i < 6; ++i)
             cubeTexture->setImage(i,images[i].get());
 
-        osg::ref_ptr<osg::Camera> screenshotCamera (new osg::Camera);
+        if(!mScreenshotCamera.valid()) mScreenshotCamera = new osg::Camera;
         osg::ref_ptr<osg::ShapeDrawable> quad (new osg::ShapeDrawable(new osg::Box(osg::Vec3(0,0,0),2.0)));
 
         std::map<std::string, std::string> defineMap;
@@ -873,10 +909,11 @@ namespace MWRender
         quad->setStateSet(stateset);
         quad->setUpdateCallback(nullptr);
 
-        screenshotCamera->addChild(quad);
+        mScreenshotCamera->addChild(quad);
 
-        renderCameraToImage(screenshotCamera,image,screenshotW,screenshotH);
+        renderCameraToImage(mScreenshotCamera,image,screenshotW,screenshotH);
 
+        mScreenshotCamera->removeChildren(0,mSceneRoot->getNumChildren());
         return true;
     }
 
@@ -970,21 +1007,24 @@ namespace MWRender
 
     void RenderingManager::screenshot(osg::Image *image, int w, int h, osg::Matrixd cameraTransform)
     {
-        osg::ref_ptr<osg::Camera> rttCamera (new osg::Camera);
-        rttCamera->setProjectionMatrixAsPerspective(mFieldOfView, w/float(h), mNearClip, mViewDistance);
-        rttCamera->setViewMatrix(mViewer->getCamera()->getViewMatrix() * cameraTransform);
+        if(!mRttCamera.valid()) mRttCamera = new osg::Camera;
+        mRttCamera->setProjectionMatrixAsPerspective(mFieldOfView, w/float(h), mNearClip, mViewDistance);
+        mRttCamera->setViewMatrix(mViewer->getCamera()->getViewMatrix() * cameraTransform);
 
-        rttCamera->setUpdateCallback(new NoTraverseCallback);
-        rttCamera->addChild(mSceneRoot);
+        mRttCamera->setUpdateCallback(new NoTraverseCallback);
 
-        rttCamera->addChild(mWater->getReflectionCamera());
-        rttCamera->addChild(mWater->getRefractionCamera());
+        mRttCamera->addChild(mSceneRoot);
 
-        rttCamera->setCullMask(mViewer->getCamera()->getCullMask() & (~Mask_GUI));
+        mRttCamera->addChild(mWater->getReflectionCamera());
+        mRttCamera->addChild(mWater->getRefractionCamera());
 
-        rttCamera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        mRttCamera->setCullMask(mViewer->getCamera()->getCullMask() & (~Mask_GUI));
 
-        renderCameraToImage(rttCamera.get(),image,w,h);
+        mRttCamera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        renderCameraToImage(mRttCamera.get(),image,w,h);
+
+        mRttCamera->removeChildren(0,mRttCamera->getNumChildren());
     }
 
     osg::Vec4f RenderingManager::getScreenBounds(const osg::BoundingBox &worldbb)
@@ -1306,6 +1346,10 @@ namespace MWRender
             else if (it->first == "Water")
                 mWater->processChangedSettings(changed);
         }
+        mObjects->resetSettings();
+        mTerrain->resetSettings();
+
+        resetShadowSettings();
     }
 
     float RenderingManager::getNearClipDistance() const

@@ -8,6 +8,7 @@
 #include <osg/Object>
 
 #include "../mwworld/ptr.hpp"
+#include "components/sceneutil/occlusionsettings.hpp"
 
 namespace osg
 {
@@ -68,8 +69,15 @@ class Objects{
 
     osg::ref_ptr<SceneUtil::UnrefQueue> mUnrefQueue;
 
-    void insertBegin(const MWWorld::Ptr& ptr);
+    SceneUtil::OcclusionQuerySettings mOQNSettings;
 
+    /// @return pointer to cell root
+    osg::Group *insertBegin(const MWWorld::Ptr& ptr);
+    osg::Group *getOrCreateCell(const MWWorld::Ptr &ptr);
+
+    ///helpers
+    void cellAddStaticObject(osg::Group* cellnode, const MWWorld::Ptr &ptr);
+    void cellRemoveStaticObject(osg::Group* cellnode, const MWWorld::Ptr &ptr);
 public:
     Objects(Resource::ResourceSystem* resourceSystem, osg::ref_ptr<osg::Group> rootNode, SceneUtil::UnrefQueue* unrefQueue);
     ~Objects();
@@ -92,6 +100,11 @@ public:
     /// Updates containing cell for object rendering data
     void updatePtr(const MWWorld::Ptr &old, const MWWorld::Ptr &cur);
 
+    void resetSettings();
+
+    inline SceneUtil::OcclusionQuerySettings & getOcclusionSettings() { return mOQNSettings; }
+
+    inline osg::Group* getRootNode() { return mRootNode; }
 private:
     void operator = (const Objects&);
     Objects(const Objects&);

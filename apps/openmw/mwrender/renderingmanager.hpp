@@ -248,6 +248,7 @@ namespace MWRender
         void getPagedRefnums(const osg::Vec4i &activeGrid, std::set<ESM::RefNum> &out);
 
     private:
+        void resetShadowSettings();
         void updateProjectionMatrix();
         void updateTextureFiltering();
         void updateAmbient();
@@ -266,7 +267,9 @@ namespace MWRender
 
         osg::ref_ptr<osgUtil::IntersectionVisitor> mIntersectionVisitor;
 
-        osg::ref_ptr<osgViewer::Viewer> mViewer;
+        osg::ref_ptr<osgViewer::Viewer> mViewer;        
+        osg::ref_ptr<osg::Camera> mRttCamera;
+        osg::ref_ptr<osg::Camera> mScreenshotCamera;
         osg::ref_ptr<osg::Group> mRootNode;
         osg::ref_ptr<osg::Group> mSceneRoot;
         Resource::ResourceSystem* mResourceSystem;
@@ -290,7 +293,6 @@ namespace MWRender
         std::unique_ptr<SkyManager> mSky;
         std::unique_ptr<FogManager> mFog;
         std::unique_ptr<EffectManager> mEffectManager;
-        std::unique_ptr<SceneUtil::ShadowManager> mShadowManager;
         osg::ref_ptr<NpcAnimation> mPlayerAnimation;
         osg::ref_ptr<SceneUtil::PositionAttitudeTransform> mPlayerNode;
         std::unique_ptr<Camera> mCamera;

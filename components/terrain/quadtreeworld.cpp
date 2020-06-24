@@ -10,6 +10,7 @@
 #include <components/misc/constants.hpp>
 #include <components/sceneutil/mwshadowtechnique.hpp>
 #include <components/sceneutil/positionattitudetransform.hpp>
+#include <components/sceneutil/occlusionquerynode.hpp>
 
 #include "quadtreenode.hpp"
 #include "storage.hpp"
@@ -243,14 +244,17 @@ private:
     osg::ref_ptr<RootNode> mRootNode;
 };
 
-QuadTreeWorld::QuadTreeWorld(osg::Group *parent, osg::Group *compileRoot, Resource::ResourceSystem *resourceSystem, Storage *storage, int nodeMask, int preCompileMask, int borderMask, int compMapResolution, float compMapLevel, float lodFactor, int vertexLodMod, float maxCompGeometrySize)
-    : TerrainGrid(parent, compileRoot, resourceSystem, storage, nodeMask, preCompileMask, borderMask)
+QuadTreeWorld::QuadTreeWorld(osg::Group *parent, osg::Group *compileRoot, Resource::ResourceSystem *resourceSystem, Storage *storage,
+                             unsigned int nodeMask, const SceneUtil::OcclusionQuerySettings& oqsettings,unsigned  int preCompileMask,unsigned  int borderMask,
+                             unsigned int compMapResolution, float compMapLevel, float lodFactor, int vertexLodMod, float maxCompGeometrySize)
+    : TerrainGrid(parent, compileRoot, resourceSystem, storage, nodeMask, oqsettings, preCompileMask, borderMask)
     , mViewDataMap(new ViewDataMap)
     , mQuadTreeBuilt(false)
     , mLodFactor(lodFactor)
     , mVertexLodMod(vertexLodMod)
     , mViewDistance(std::numeric_limits<float>::max())
 {
+    resetSettings();
     mChunkManager->setCompositeMapSize(compMapResolution);
     mChunkManager->setCompositeMapLevel(compMapLevel);
     mChunkManager->setMaxCompositeGeometrySize(maxCompGeometrySize);
@@ -312,7 +316,7 @@ unsigned int getLodFlags(QuadTreeNode* node, int ourLod, int vertexLodMod, const
     return lodFlags;
 }
 
-void loadRenderingNode(ViewData::Entry& entry, ViewData* vd, int vertexLodMod, float cellWorldSize, const osg::Vec4i &gridbounds, const std::vector<QuadTreeWorld::ChunkManager*>& chunkManagers, bool compile)
+void QuadTreeWorld::loadRenderingNode(ViewData::Entry& entry, ViewData* vd, int vertexLodMod, float cellWorldSize, const osg::Vec4i &gridbounds, const std::vector<QuadTreeWorld::ChunkManager*>& chunkManagers, bool compile)
 {
     if (!vd->hasChanged() && entry.mRenderingNode)
         return;
@@ -344,6 +348,25 @@ void loadRenderingNode(ViewData::Entry& entry, ViewData* vd, int vertexLodMod, f
             if (n) pat->addChild(n);
         }
         entry.mRenderingNode = pat;
+        entry.mRenderingNode->setNodeMask(mTerrainNodeMask);
+
+        if(mOQNSettings.enable&&entry.mRenderingNode.valid())
+        {
+            SceneUtil::StaticOcclusionQueryNode* qnode = new SceneUtil::StaticOcclusionQueryNode;
+            qnode->getQueryStateSet()->setRenderBinDetails( mOQNSettings.OQRenderBin, "SORT_FRONT_TO_BACK", osg::StateSet::PROTECTED_RENDERBIN_DETAILS);
+            qnode->setDebugDisplay(mOQNSettings.debugDisplay);
+            qnode->setVisibilityThreshold(mOQNSettings.querypixelcount);
+            qnode->setQueryFrameCount(mOQNSettings.queryframecount);
+            qnode->setQueryMargin(mOQNSettings.querymargin);
+            qnode->setDistancePreventingPopin(mOQNSettings.securepopdistance);
+
+            qnode->addChild(entry.mRenderingNode);
+            qnode->getQueryGeometry()->setNodeMask(mOQNSettings.OQMask);
+            qnode->getDebugGeometry()->setNodeMask(mOQNSettings.OQMask);
+
+            qnode->resetStaticQueryGeometry();
+            entry.mRenderingNode = qnode;
+        }
     }
 }
 
@@ -431,10 +454,22 @@ void QuadTreeWorld::accept(osg::NodeVisitor &nv)
 
     const float cellWorldSize = mStorage->getCellWorldSize();
 
+    osg::Node *chunknode;
     for (unsigned int i=0; i<vd->getNumEntries(); ++i)
     {
         ViewData::Entry& entry = vd->getEntry(i);
         loadRenderingNode(entry, vd, mVertexLodMod, cellWorldSize, mActiveGrid, mChunkManagers, false);
+
+        if(mOQNSettings.enable)
+            chunknode = entry.mRenderingNode->asGroup()->getChild(0);
+        else chunknode = entry.mRenderingNode;
+        osg::UserDataContainer* udc = chunknode->getUserDataContainer();
+        if (udc && udc->getUserData())
+        {
+            mCompositeMapRenderer->setImmediate(static_cast<CompositeMap*>(udc->getUserData()));
+            udc->setUserData(nullptr);
+
+        }
         entry.mRenderingNode->accept(nv);
     }
 

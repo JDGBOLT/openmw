@@ -230,6 +230,16 @@ namespace SceneUtil {
 
         virtual osg::StateSet* selectStateSetForRenderingShadow(ViewDependentData& vdd) const;
 
+        void setSceneMask(unsigned int m) { _sceneMask = m; }
+        unsigned int getSceneMask() const { return _sceneMask; }
+
+        //set mask used used on Oclusion Query Node Query Geometry (to exclude them during farplane computation)
+        void setOcclusionQueryMask(unsigned int m) { _OQMask = m; }
+        unsigned int getOcclusionQueryMask() const { return _OQMask; }
+
+        //set mask of objects used to compute farplane
+        void setComputeFarMask(unsigned int m) { _computeFarMask = m; }
+        unsigned int getComputeFarMask() const { return _computeFarMask; }
     protected:
         virtual ~MWShadowTechnique();
 
@@ -258,9 +268,10 @@ namespace SceneUtil {
         float                                   _polygonOffsetUnits = 4.0;
 
         bool                                    _useFrontFaceCulling = true;
-
         float                                   _shadowFadeStart = 0.0;
 
+        unsigned int                            _sceneMask, _OQMask, _computeFarMask;
+        
         class DebugHUD final : public osg::Referenced
         {
         public:

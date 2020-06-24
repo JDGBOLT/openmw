@@ -6,6 +6,8 @@
 #include <osg/ComputeBoundsVisitor>
 
 #include <components/sceneutil/positionattitudetransform.hpp>
+#include <components/sceneutil/occlusionquerynode.hpp>
+
 #include "chunkmanager.hpp"
 #include "compositemaprenderer.hpp"
 #include "storage.hpp"
@@ -20,10 +22,12 @@ public:
     virtual void reset() {}
 };
 
-TerrainGrid::TerrainGrid(osg::Group* parent, osg::Group* compileRoot, Resource::ResourceSystem* resourceSystem, Storage* storage, int nodeMask, int preCompileMask, int borderMask)
-    : Terrain::World(parent, compileRoot, resourceSystem, storage, nodeMask, preCompileMask, borderMask)
+TerrainGrid::TerrainGrid(osg::Group* parent, osg::Group* compileRoot, Resource::ResourceSystem* resourceSystem, Storage* storage,
+                         unsigned int nodeMask, const SceneUtil::OcclusionQuerySettings& qsettings, unsigned int preCompileMask, unsigned int borderMask)
+    : Terrain::World(parent, compileRoot, resourceSystem, storage, nodeMask, qsettings, preCompileMask, borderMask)
     , mNumSplits(4)
 {
+    resetSettings();
 }
 
 TerrainGrid::~TerrainGrid()
@@ -37,7 +41,7 @@ TerrainGrid::~TerrainGrid()
 void TerrainGrid::cacheCell(View* view, int x, int y)
 {
     osg::Vec2f center(x+0.5f, y+0.5f);
-    static_cast<MyView*>(view)->mLoaded =  buildTerrain(nullptr, 1.f, center);
+    static_cast<MyView*>(view)->mLoaded = buildTerrain(nullptr, 1.f, center);
 }
 
 osg::ref_ptr<osg::Node> TerrainGrid::buildTerrain (osg::Group* parent, float chunkSize, const osg::Vec2f& chunkCenter)
@@ -45,7 +49,22 @@ osg::ref_ptr<osg::Node> TerrainGrid::buildTerrain (osg::Group* parent, float chu
     if (chunkSize * mNumSplits > 1.f)
     {
         // keep splitting
-        osg::ref_ptr<osg::Group> group (new osg::Group);
+        osg::ref_ptr<osg::Group> group;
+        if(mOQNSettings.enable)
+        {
+            SceneUtil::StaticOcclusionQueryNode* qnode = new SceneUtil::StaticOcclusionQueryNode;            
+            qnode->getQueryStateSet()->setRenderBinDetails( mOQNSettings.OQRenderBin, "SORT_FRONT_TO_BACK", osg::StateSet::PROTECTED_RENDERBIN_DETAILS);
+            qnode->setDebugDisplay(mOQNSettings.debugDisplay);
+            qnode->setVisibilityThreshold(mOQNSettings.querypixelcount);
+            qnode->setQueryFrameCount(mOQNSettings.queryframecount);
+            qnode->setQueryMargin(mOQNSettings.querymargin);
+            qnode->setDistancePreventingPopin(mOQNSettings.securepopdistance);
+            qnode->getQueryGeometry()->setNodeMask(mOQNSettings.OQMask);
+            qnode->getDebugGeometry()->setNodeMask(mOQNSettings.OQMask);
+            group = qnode;
+        }
+        else group = new osg::Group;
+
         if (parent)
             parent->addChild(group);
 
@@ -54,6 +73,8 @@ osg::ref_ptr<osg::Node> TerrainGrid::buildTerrain (osg::Group* parent, float chu
         buildTerrain(group, newChunkSize, chunkCenter + osg::Vec2f(newChunkSize/2.f, -newChunkSize/2.f));
         buildTerrain(group, newChunkSize, chunkCenter + osg::Vec2f(-newChunkSize/2.f, newChunkSize/2.f));
         buildTerrain(group, newChunkSize, chunkCenter + osg::Vec2f(-newChunkSize/2.f, -newChunkSize/2.f));
+        if(mOQNSettings.enable)
+            static_cast<SceneUtil::StaticOcclusionQueryNode*>(group.get())->resetStaticQueryGeometry();
         return group;
     }
     else
@@ -62,12 +83,32 @@ osg::ref_ptr<osg::Node> TerrainGrid::buildTerrain (osg::Group* parent, float chu
         if (!node)
             return nullptr;
 
+        node->setNodeMask(mTerrainNodeMask);
+
+        if(mOQNSettings.enable)
+        {
+            SceneUtil::StaticOcclusionQueryNode* qnode = new SceneUtil::StaticOcclusionQueryNode;
+            qnode->getQueryStateSet()->setRenderBinDetails( mOQNSettings.OQRenderBin, "SORT_FRONT_TO_BACK", osg::StateSet::PROTECTED_RENDERBIN_DETAILS);
+            qnode->setDebugDisplay(mOQNSettings.debugDisplay);
+            qnode->setVisibilityThreshold(mOQNSettings.querypixelcount);
+            qnode->setQueryFrameCount(mOQNSettings.queryframecount);
+            qnode->setQueryMargin(mOQNSettings.querymargin);
+            qnode->setDistancePreventingPopin(mOQNSettings.securepopdistance);
+            qnode->addChild(node);
+
+            qnode->getQueryGeometry()->setNodeMask(mOQNSettings.OQMask);
+            qnode->getDebugGeometry()->setNodeMask(mOQNSettings.OQMask);
+            node = qnode;
+        }
+
         const float cellWorldSize = mStorage->getCellWorldSize();
         osg::ref_ptr<SceneUtil::PositionAttitudeTransform> pat = new SceneUtil::PositionAttitudeTransform;
         pat->setPosition(osg::Vec3f(chunkCenter.x()*cellWorldSize, chunkCenter.y()*cellWorldSize, 0.f));
         pat->addChild(node);
         if (parent)
             parent->addChild(pat);
+        if(mOQNSettings.enable)
+            static_cast<SceneUtil::StaticOcclusionQueryNode*>(node.get())->resetStaticQueryGeometry();
         return pat;
     }
 }
