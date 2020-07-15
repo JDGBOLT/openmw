@@ -15,6 +15,8 @@
 #include "actions.hpp"
 #include "sdlmappings.hpp"
 
+#include "../mwgui/quickloot.hpp"
+
 namespace MWInput
 {
     static const int sFakeDeviceId = 1; //As we only support one controller at a time, use a fake deviceID so we don't lose bindings when switching controllers
@@ -57,6 +59,9 @@ namespace MWInput
             : mInputBinder(inputBinder)
             , mBindingsManager(bindingsManager)
             , mDetectingKeyboard(false)
+            , mDetectingQuickLoot(false)
+            , mQuickLootBlock(false)
+            , mQuickLootKey("")
         {
         }
 
@@ -65,6 +70,26 @@ namespace MWInput
         virtual void channelChanged(ICS::Channel* channel, float currentValue, float previousValue)
         {
             int action = channel->getNumber();
+            if (MWBase::Environment::get().getWindowManager()->getQuickLoot()->isVisible() && 
+                Settings::Manager::getBool("enable quickloot", "MorroUI"))
+              {
+                 static const std::vector<int> quickLootKeys =  {
+                      SDL_GetScancodeFromName(Settings::Manager::getString("key quickloot take", "MorroUI").c_str()),
+                      SDL_GetScancodeFromName(Settings::Manager::getString("key quickloot takeall", "MorroUI").c_str())
+                 };
+
+                 ICS::Control* c = channel->getAttachedControls ().front().control;
+                 int scanCode = mInputBinder->getKeyBinding(c,ICS::Control::INCREASE);
+
+                 for (int k : quickLootKeys)
+                   if (k == scanCode) 
+                     {
+                        mQuickLootBlock = true;
+                        return;
+                     }
+              }
+
+            mQuickLootBlock = false;
             mBindingsManager->actionValueChanged(action, currentValue, previousValue);
         }
 
@@ -93,6 +118,14 @@ namespace MWInput
             if (!mDetectingKeyboard)
                 return;
 
+            if (mDetectingQuickLoot)
+            {
+               Settings::Manager::setString(mQuickLootKey, "MorroUI", SDL_GetScancodeName(key));
+               ICS->cancelDetectingBindingState();
+               MWBase::Environment::get().getWindowManager ()->notifyInputActionBound ();
+               return;
+            }
+
             clearAllKeyBindings(mInputBinder, control);
             control->setInitialValue(0.0f);
             ICS::DetectingBindingListener::keyBindingDetected(ICS, control, key, direction);
@@ -109,7 +142,7 @@ namespace MWInput
         virtual void mouseButtonBindingDetected(ICS::InputControlSystem* ICS, ICS::Control* control
             , unsigned int button, ICS::Control::ControlChangingDirection direction)
         {
-            if (!mDetectingKeyboard)
+            if (!mDetectingKeyboard || mDetectingQuickLoot)
                 return;
             clearAllKeyBindings(mInputBinder, control);
             control->setInitialValue(0.0f);
@@ -120,7 +153,7 @@ namespace MWInput
         virtual void mouseWheelBindingDetected(ICS::InputControlSystem* ICS, ICS::Control* control
             , ICS::InputControlSystem::MouseWheelClick click, ICS::Control::ControlChangingDirection direction)
         {
-            if (!mDetectingKeyboard)
+            if (!mDetectingKeyboard || mDetectingQuickLoot)
                 return;
             clearAllKeyBindings(mInputBinder, control);
             control->setInitialValue(0.0f);
@@ -160,10 +193,23 @@ namespace MWInput
             mDetectingKeyboard = detecting;
         }
 
+        void setQuickLoot(bool detecting, std::string key)
+        {
+            mDetectingQuickLoot = detecting;
+            mQuickLootKey = key;
+        }
+        bool getQuickLootBlock()
+        {
+           return mQuickLootBlock;
+        }
+
     private:
         ICS::InputControlSystem* mInputBinder;
         BindingsManager* mBindingsManager;
         bool mDetectingKeyboard;
+        bool mDetectingQuickLoot;
+        bool mQuickLootBlock;
+        std::string mQuickLootKey;
     };
 
     BindingsManager::BindingsManager(const std::string& userFile, bool userFileExists)
@@ -582,9 +628,14 @@ namespace MWInput
         return actions;
     }
 
-    void BindingsManager::enableDetectingBindingMode(int action, bool keyboard)
+    bool BindingsManager::getQuickLootBlock() {
+        return mListener->getQuickLootBlock();
+    }
+
+    void BindingsManager::enableDetectingBindingMode(int action, bool keyboard, bool quickloot, std::string key)
     {
         mListener->setDetectingKeyboard(keyboard);
+        mListener->setQuickLoot(quickloot, key);
         ICS::Control* c = mInputBinder->getChannel(action)->getAttachedControls().front().control;
         mInputBinder->enableDetectingBindingState(c, ICS::Control::INCREASE);
     }
@@ -682,6 +733,7 @@ namespace MWInput
             return;
         }
 
+
         if (MWBase::Environment::get().getInputManager()->getControlSwitch("playercontrols"))
         {
             bool joystickUsed = MWBase::Environment::get().getInputManager()->joystickLastUsed();
@@ -716,4 +768,5 @@ namespace MWInput
         if (currentValue == 1)
             MWBase::Environment::get().getInputManager()->executeAction(action);
     }
+
 }

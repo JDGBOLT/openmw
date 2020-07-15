@@ -1,6 +1,10 @@
 #ifndef MWGUI_BOOKWINDOW_H
 #define MWGUI_BOOKWINDOW_H
 
+#include <osg/Group>
+
+#include <components/resource/resourcesystem.hpp>
+
 #include "windowbase.hpp"
 
 #include "../mwworld/ptr.hpp"
@@ -12,7 +16,7 @@ namespace MWGui
     class BookWindow : public BookWindowBase
     {
         public:
-            BookWindow();
+            BookWindow(Resource::ResourceSystem* resourceSystem);
 
             void setPtr(const MWWorld::Ptr& book);
             void setInventoryAllowed(bool allowed);
@@ -49,6 +53,9 @@ namespace MWGui
             MyGUI::Widget* mLeftPage;
             MyGUI::Widget* mRightPage;
 
+            MyGUI::ImageBox* mBookJacket;
+            MyGUI::ImageBox* mJImage;
+
             unsigned int mCurrentPage; // 0 is first page
             Pages mPages;
 
@@ -56,6 +63,8 @@ namespace MWGui
 
             bool mTakeButtonShow;
             bool mTakeButtonAllowed;
+
+            Resource::ResourceSystem* mResourceSystem;
     };
 
 }

@@ -1,8 +1,13 @@
-#ifndef MGUI_Inventory_H
-#define MGUI_Inventory_H
+#ifndef OPENMW_MWGUI_INVENTORYWINDOW_H
+#define OPENMW_MWGUI_INVENTORYWINDOW_H
 
 #include "windowpinnablebase.hpp"
 #include "mode.hpp"
+
+#include <components/widgets/imagepushbutton.hpp>
+#include <components/widgets/box.hpp>
+
+#include "itemlistwidget.hpp"
 
 #include "../mwworld/ptr.hpp"
 #include "../mwrender/characterpreview.hpp"
@@ -33,6 +38,12 @@ namespace MWGui
     class InventoryWindow : public WindowPinnableBase
     {
         public:
+
+            enum Mode {
+                View_Item,
+                View_Avatar
+            };
+
             InventoryWindow(DragAndDrop* dragAndDrop, osg::Group* parent, Resource::ResourceSystem* resourceSystem);
 
             virtual void onOpen();
@@ -45,7 +56,7 @@ namespace MWGui
             void pickUpObject (MWWorld::Ptr object);
 
             MWWorld::Ptr getAvatarSelectedItem(int x, int y);
-
+            
             void rebuildAvatar();
 
             SortFilterItemModel* getSortFilterModel();
@@ -56,11 +67,15 @@ namespace MWGui
 
             void updatePlayer();
 
+            void adjustCategoryHeader();
+
             void clear();
 
             void useItem(const MWWorld::Ptr& ptr, bool force=false);
 
             void setGuiMode(GuiMode mode);
+
+            void resetAvatar();
 
             /// Cycle to previous/next weapon
             void cycle(bool next);
@@ -79,19 +94,25 @@ namespace MWGui
             SortFilterItemModel* mSortModel;
             TradeItemModel* mTradeModel;
 
-            MyGUI::Widget* mAvatar;
-            MyGUI::ImageBox* mAvatarImage;
+            MyGUI::TextBox* mPlayerGold; 
             MyGUI::TextBox* mArmorRating;
-            Widgets::MWDynamicStat* mEncumbranceBar;
+            MyGUI::TextBox* mEncumbranceBar;
 
-            MyGUI::Widget* mLeftPane;
-            MyGUI::Widget* mRightPane;
+            MyGUI::EditBox* mDescription;
 
-            MyGUI::Button* mFilterAll;
-            MyGUI::Button* mFilterWeapon;
-            MyGUI::Button* mFilterApparel;
-            MyGUI::Button* mFilterMagic;
-            MyGUI::Button* mFilterMisc;
+            Gui::ImagePushButton* mAllButton;
+            Gui::ImagePushButton* mWeaponButton;
+            Gui::ImagePushButton* mArmorButton;
+            Gui::ImagePushButton* mClothButton;
+            Gui::ImagePushButton* mPotionButton;
+            Gui::ImagePushButton* mIngredientButton;
+            Gui::ImagePushButton* mBookButton;
+            Gui::ImagePushButton* mToolButton;
+            Gui::ImagePushButton* mMagicButton;
+            Gui::ImagePushButton* mMiscButton;
+            Gui::ImagePushButton* mToggleAvatar;
+
+            MyGUI::Widget* mCategories;
             
             MyGUI::EditBox* mFilterEdit;
 
@@ -100,17 +121,42 @@ namespace MWGui
             int mLastXSize;
             int mLastYSize;
 
+            int mRoll;
+            int mPitch;
+            int mYaw;
+
+            bool mTrading;
+            bool mDrop; 
+            float mScaleFactor;
+            float mUpdateTimer; 
+
+            Mode mViewMode;
+
+            double mScale;
+
+            MyGUI::Widget* mAvatar;
+            MyGUI::ImageBox* mAvatarImage;
+
+            MyGUI::Widget* mLeftPane;
+            MyGUI::Widget* mRightPane;
+
             std::unique_ptr<MyGUI::ITexture> mPreviewTexture;
             std::unique_ptr<MWRender::InventoryPreview> mPreview;
 
-            bool mTrading;
-            float mScaleFactor;
-            float mUpdateTimer;
+            MyGUI::IntPoint mLastDragPos;
 
             void toggleMaximized();
-
+            
+            void onHeaderClicked(int sort);
+            void onToggleItem(MyGUI::Widget* sender, int count);
+            void onKeyButtonPressed(MyGUI::Widget* sender, MyGUI::KeyCode key);
+            void onItemFocus(ItemListWidget* item);
             void onItemSelected(int index);
             void onItemSelectedFromSourceModel(int index);
+            void onMouseWheel(MyGUI::Widget* _sender, int _rel);
+
+            void onDragStart(MyGUI::Widget* _sender, int _left, int _top, MyGUI::MouseButton _id);
+            void onMouseDrag(MyGUI::Widget* _sender, int _left, int _top, MyGUI::MouseButton _id);
 
             void onBackgroundSelected();
 
@@ -123,13 +169,15 @@ namespace MWGui
             void onFilterChanged(MyGUI::Widget* _sender);
             void onNameFilterChanged(MyGUI::EditBox* _sender);
             void onAvatarClicked(MyGUI::Widget* _sender);
+            void onAvatarToggled(MyGUI::Widget* _sender);
             void onPinToggled();
 
-            void updateEncumbranceBar();
             void notifyContentChanged();
             void dirtyPreview();
+            void updateEncumbranceBar();
             void updatePreviewSize();
             void updateArmorRating();
+            void updatePlayerGold();
 
             void adjustPanes();
 

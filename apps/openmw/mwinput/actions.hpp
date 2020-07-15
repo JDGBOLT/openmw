@@ -73,6 +73,9 @@ namespace MWInput
         A_ZoomIn,
         A_ZoomOut,
 
+        A_QuickLoot_Take,
+        A_QuickLoot_TakeAll,
+
         A_Last                      // Marker for the last item
     };
 }

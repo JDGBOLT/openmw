@@ -57,6 +57,7 @@ namespace MWGui
     class Layout;
 
     class Console;
+    class QuickLoot;
     class SpellWindow;
     class TradeWindow;
     class TravelWindow;
@@ -70,6 +71,7 @@ namespace MWGui
     class DialogueWindow;
     class WindowModal;
     class JailScreen;
+    class QuickKeysMenu;
 
     enum ShowInDialogueMode {
         ShowInDialogueMode_IfPossible,
@@ -128,6 +130,8 @@ namespace MWBase
 
             virtual bool isConsoleMode() const = 0;
 
+            virtual void notifyMouseWheel(int rel) = 0;
+
             virtual void toggleVisible (MWGui::GuiWindow wnd) = 0;
 
             virtual void forceHide(MWGui::GuiWindow wnd) = 0;
@@ -146,6 +150,8 @@ namespace MWBase
             virtual MWGui::CountDialog* getCountDialog() = 0;
             virtual MWGui::ConfirmationDialog* getConfirmationDialog() = 0;
             virtual MWGui::TradeWindow* getTradeWindow() = 0;
+            virtual MWGui::QuickKeysMenu* getQuickKeysMenu() = 0;
+            virtual MWGui::QuickLoot* getQuickLoot() = 0;
 
             /// Make the player use an item, while updating GUI state accordingly
             virtual void useItem(const MWWorld::Ptr& item, bool force=false) = 0;
@@ -198,6 +204,10 @@ namespace MWBase
             virtual void activateQuickKey (int index) = 0;
             /// update activated quick key state (if action executing was delayed for some reason)
             virtual void updateActivatedQuickKey () = 0;
+
+            // whether or not to use key focu or mouse focus widget for tooltips 
+            virtual void setKeyTooltip(bool enable) = 0;
+            virtual bool isKeyTooltip() const = 0;
 
             virtual std::string getSelectedSpell() = 0;
             virtual void setSelectedSpell(const std::string& spellId, int successChancePercent) = 0;

@@ -34,6 +34,7 @@ namespace MWGui
         : WindowPinnableBase("openmw_spell_window.layout")
         , NoDrop(drag, mMainWidget)
         , mSpellView(nullptr)
+        , mSortModel(nullptr)
         , mUpdateTimer(0.0f)
     {
         mSpellIcons = new SpellIcons();
@@ -44,16 +45,75 @@ namespace MWGui
         getWidget(mSpellView, "SpellView");
         getWidget(mEffectBox, "EffectsBox");
         getWidget(mFilterEdit, "FilterEdit");
+        getWidget(mFilterValue, "FilterValue");
+
+        getWidget(mAllButton, "AllButton");
+        getWidget(mPowersButton, "PowersButton");
+        getWidget(mItemsButton, "ItemsButton");
+        getWidget(mAlterationButton, "AlterationButton");
+        getWidget(mConjurationButton, "ConjurationButton");
+        getWidget(mDestructionButton, "DestructionButton");
+        getWidget(mIllusionButton, "IllusionButton");
+        getWidget(mMysticismButton, "MysticismButton");
+        getWidget(mRestorationButton, "RestorationButton");
+        getWidget(mCategories, "Categories");
 
         mSpellView->eventSpellClicked += MyGUI::newDelegate(this, &SpellWindow::onModelIndexSelected);
-        mFilterEdit->eventEditTextChange += MyGUI::newDelegate(this, &SpellWindow::onFilterChanged);
+        mFilterEdit->eventEditTextChange += MyGUI::newDelegate(this, &SpellWindow::onNameFilterChanged);
         deleteButton->eventMouseButtonClick += MyGUI::newDelegate(this, &SpellWindow::onDeleteClicked);
+
+        mFilterValue->eventComboChangePosition += MyGUI::newDelegate(this, &SpellWindow::onFilterChanged);
+        mFilterValue->eventEditTextChange += MyGUI::newDelegate(this, &SpellWindow::onFilterEdited);
+
+        mAllButton->eventMouseButtonClick += MyGUI::newDelegate(this, &SpellWindow::onCategoryFilterChanged);
+        mPowersButton->eventMouseButtonClick += MyGUI::newDelegate(this, &SpellWindow::onCategoryFilterChanged);
+        mItemsButton->eventMouseButtonClick += MyGUI::newDelegate(this, &SpellWindow::onCategoryFilterChanged);
+        mAlterationButton->eventMouseButtonClick += MyGUI::newDelegate(this, &SpellWindow::onCategoryFilterChanged);
+        mConjurationButton->eventMouseButtonClick += MyGUI::newDelegate(this, &SpellWindow::onCategoryFilterChanged);
+        mDestructionButton->eventMouseButtonClick += MyGUI::newDelegate(this, &SpellWindow::onCategoryFilterChanged);
+        mIllusionButton->eventMouseButtonClick += MyGUI::newDelegate(this, &SpellWindow::onCategoryFilterChanged);
+        mMysticismButton->eventMouseButtonClick += MyGUI::newDelegate(this, &SpellWindow::onCategoryFilterChanged);
+        mRestorationButton->eventMouseButtonClick += MyGUI::newDelegate(this, &SpellWindow::onCategoryFilterChanged);
+
+        mSpellView->getHeader()->eventItemClicked += MyGUI::newDelegate(this, &SpellWindow::onHeaderClicked);
 
         setCoord(498, 300, 302, 300);
 
         // Adjust the spell filtering widget size because of MyGUI limitations.
         int filterWidth = mSpellView->getSize().width - deleteButton->getSize().width - 3;
         mFilterEdit->setSize(filterWidth, mFilterEdit->getSize().height);
+    }
+
+    void SpellWindow::onHeaderClicked(int sort)
+    {
+        mSortModel->toggleSort(sort);
+        mSpellView->update();
+    }
+
+    void SpellWindow::adjustCategoryHeader()
+    {
+        mCategories->setCoord(8,36,mCategories->getWidth(), mCategories->getHeight());
+        static int maxPadding = MyGUI::utility::parseInt(mCategories->getUserString("MaxPadding"));
+        static int maxSize = MyGUI::utility::parseInt(mCategories->getUserString("MaxSize"));
+        static int minMargin = MyGUI::utility::parseInt(mCategories->getUserString("MinMargin"));
+        static int minSize = MyGUI::utility::parseInt(mCategories->getUserString("MinSize"));
+        static int padding = MyGUI::utility::parseInt(mCategories->getUserString("Padding"));
+        
+        int count = mCategories->getChildCount();
+
+        int width = std::min(maxSize,std::max(static_cast<int>(((mCategories->getWidth()-(2*minMargin)-(padding*count)) / static_cast<float>(count))), minSize));
+        int sidemargin = ((mCategories->getWidth() - ((width+padding) * count))/2) + 8; 
+        
+        if (sidemargin < 0)
+            sidemargin = minMargin;
+
+        MyGUI::Widget* widget = mCategories->getChildAt(0);
+        widget->setCoord(MyGUI::IntCoord(sidemargin,widget->getTop(),width,width));
+        for (size_t i = 1; i < count; i++)
+        {
+            widget = mCategories->getChildAt(i);
+            widget->setCoord(MyGUI::IntCoord(mCategories->getChildAt(i-1)->getLeft()+width+padding,widget->getTop(),width,width));
+        }
     }
 
     SpellWindow::~SpellWindow()
@@ -68,6 +128,102 @@ namespace MWGui
         MWBase::Environment::get().getWindowManager()->setSpellVisibility(!mPinned);
     }
 
+    void SpellWindow::onCategoryFilterChanged(MyGUI::Widget* _sender)
+    {
+        setTitle(_sender->getUserString("Title"));
+        if (_sender == mAllButton)
+            mSortModel->setCategory(SpellModel::Category_All);
+        if (_sender == mPowersButton)
+            mSortModel->setCategory(SpellModel::Category_Powers);
+        if (_sender == mItemsButton)
+            mSortModel->setCategory(SpellModel::Category_Items);
+        if (_sender == mAlterationButton)
+            mSortModel->setCategory(SpellModel::Category_Alteration);
+        if (_sender == mConjurationButton)
+            mSortModel->setCategory(SpellModel::Category_Conjuration);
+        if (_sender == mDestructionButton)
+            mSortModel->setCategory(SpellModel::Category_Destruction);
+        if (_sender == mIllusionButton)
+            mSortModel->setCategory(SpellModel::Category_Illusion);
+        if (_sender == mMysticismButton)
+            mSortModel->setCategory(SpellModel::Category_Mysticism);
+        if (_sender == mRestorationButton)
+            mSortModel->setCategory(SpellModel::Category_Restoration);
+
+        mAllButton->setStateSelected(false);
+        mPowersButton->setStateSelected(false);
+        mItemsButton->setStateSelected(false);
+        mAlterationButton->setStateSelected(false);
+        mConjurationButton->setStateSelected(false);
+        mDestructionButton->setStateSelected(false);
+        mIllusionButton->setStateSelected(false);
+        mMysticismButton->setStateSelected(false);
+        mRestorationButton->setStateSelected(false);
+
+
+        mSpellView->update();
+        updateFilterEffect();
+
+        _sender->castType<Gui::ImagePushButton>()->setStateSelected(true);
+    }
+
+    void SpellWindow::updateFilterEffect()
+    {
+        const auto& gmst = MWBase::Environment::get().getWorld()->getStore().get<ESM::GameSetting>();
+        const auto& esm = MWBase::Environment::get().getWorld()->getStore();
+
+        std::set<std::string> effects; 
+
+        for (size_t i = 0; i < mSortModel->getItemCount(); i++)
+        {
+            auto item = mSortModel->getItem(i);
+
+            if (item.mType == Spell::Type_EnchantedItem)
+            {
+                const std::string enchantId = item.mItem.getClass().getEnchantment(item.mItem);
+                const ESM::Enchantment* enchant = esm.get<ESM::Enchantment>().search(enchantId);
+            
+                for (const ESM::ENAMstruct& spellEffect : enchant->mEffects.mList)
+                {
+                    std::string name = gmst.find(ESM::MagicEffect::effectIdToString(spellEffect.mEffectID))->mValue.getString();
+                    effects.insert(name);
+                }
+            }
+            else 
+            {
+                auto spell = esm.get<ESM::Spell>().find(item.mId);
+                for (const ESM::ENAMstruct& spellEffect : spell->mEffects.mList)
+                {
+                    std::string name = gmst.find(ESM::MagicEffect::effectIdToString(spellEffect.mEffectID))->mValue.getString();
+                    effects.insert(name);
+                }
+            }
+        }
+        mFilterEdit->setCaption({});
+        mFilterValue->setCaption({});
+        mSortModel->setEffectFilter({});
+        mFilterValue->removeAllItems();
+        for (auto e : effects)
+            mFilterValue->addItem(e);
+    }
+
+    void SpellWindow::applyFilter(const std::string& filter)
+    {
+        mSortModel->setEffectFilter(filter);
+        mSpellView->update();
+    }
+
+    void SpellWindow::onFilterChanged(MyGUI::ComboBox* _sender, size_t _index)
+    {
+        if (_index != MyGUI::ITEM_NONE)
+            applyFilter(_sender->getItemNameAt(_index));
+    }
+
+    void SpellWindow::onFilterEdited(MyGUI::EditBox* _sender)
+    {
+        applyFilter(_sender->getCaption());
+    }
+
     void SpellWindow::onTitleDoubleClicked()
     {
         if (MyGUI::InputManager::getInstance().isShiftPressed())
@@ -78,12 +234,14 @@ namespace MWGui
 
     void SpellWindow::onOpen()
     {
+        setTitle(mAllButton->getUserString("Title"));
         // Reset the filter focus when opening the window
         MyGUI::Widget* focus = MyGUI::InputManager::getInstance().getKeyFocusWidget();
         if (focus == mFilterEdit)
             MWBase::Environment::get().getWindowManager()->setKeyFocusWidget(nullptr);
 
         updateSpells();
+        updateFilterEffect();
     }
 
     void SpellWindow::onFrame(float dt) 
@@ -99,13 +257,22 @@ namespace MWGui
         // Update effects in-game too if the window is pinned
         if (mPinned && !MWBase::Environment::get().getWindowManager()->isGuiMode())
             mSpellIcons->updateWidgets(mEffectBox, false);
+
+        adjustCategoryHeader();
     }
 
     void SpellWindow::updateSpells()
-    {
+    { 
         mSpellIcons->updateWidgets(mEffectBox, false);
 
-        mSpellView->setModel(new SpellModel(MWMechanics::getPlayer(), mFilterEdit->getCaption()));
+        if (!mSortModel)
+        {
+            mSortModel = new SpellModel(MWMechanics::getPlayer());
+            mSpellView->setModel(mSortModel);
+            onCategoryFilterChanged(mAllButton);
+        }
+
+        mSpellView->update();
     }
 
     void SpellWindow::onEnchantedItemSelected(MWWorld::Ptr item, bool alreadyEquipped)
@@ -194,9 +361,10 @@ namespace MWGui
         }
     }
 
-    void SpellWindow::onFilterChanged(MyGUI::EditBox *sender)
+    void SpellWindow::onNameFilterChanged(MyGUI::EditBox *sender)
     {
-        mSpellView->setModel(new SpellModel(MWMechanics::getPlayer(), sender->getCaption()));
+        mSpellView->getModel()->setNameFilter(sender->getCaption());
+        mSpellView->update();
     }
 
     void SpellWindow::onDeleteClicked(MyGUI::Widget *widget)
@@ -236,6 +404,7 @@ namespace MWGui
 
     void SpellWindow::cycle(bool next)
     {
+
         MWWorld::Ptr player = MWMechanics::getPlayer();
 
         if (MWBase::Environment::get().getMechanicsManager()->isAttackingOrSpell(player))
@@ -245,7 +414,7 @@ namespace MWGui
         if (stats.isParalyzed() || stats.getKnockedDown() || stats.isDead() || stats.getHitRecovery())
             return;
 
-        mSpellView->setModel(new SpellModel(MWMechanics::getPlayer(), ""));
+        updateSpells();
 
         SpellModel::ModelIndex selected = mSpellView->getModel()->getSelectedIndex();
         if (selected < 0)

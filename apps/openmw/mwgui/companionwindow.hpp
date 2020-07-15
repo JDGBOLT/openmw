@@ -43,7 +43,8 @@ namespace MWGui
         MyGUI::TextBox* mProfitLabel;
         Widgets::MWDynamicStat* mEncumbranceBar;
         MessageBoxManager* mMessageBoxManager;
-
+        
+        void onHeaderClicked(int sort);
         void onItemSelected(int index);
         void onNameFilterChanged(MyGUI::EditBox* _sender);
         void onBackgroundSelected();

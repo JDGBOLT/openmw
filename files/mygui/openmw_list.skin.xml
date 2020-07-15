@@ -159,9 +159,10 @@
     </Resource>
 
     <Resource type="ResourceSkin" name="MW_ItemView" size="516 516" align="Left Top">
-        <Child type="Widget" skin="MW_Box" offset="0 0 516 516" align="Stretch"/>
-
-        <Child type="ScrollView" skin="MW_ScrollViewH" offset="3 3 509 509" align="Stretch" name="ScrollView">
+        <Child type="Widget" skin="" offset="0 0 516 516" align="Stretch"/>
+        <!-- Inventory headers -->
+        <Child type="ItemListWidgetHeader" skin="MW_ItemListHeader_Simple" position="3 3 509 50" align="Top Left" name="Header"/>
+        <Child type="ScrollView" skin="MW_ScrollView" offset="3 40 509 472" align="Stretch" name="ScrollView">
             <Property key="CanvasAlign" value="Left Top"/>
             <Property key="NeedMouse" value="true"/>
         </Child>
@@ -177,9 +178,10 @@
     </Resource>
 
     <Resource type="ResourceSkin" name="MW_SpellView" size="516 516" align="Left Top">
-        <Child type="Widget" skin="MW_Box" offset="0 0 516 516" align="Stretch"/>
-
-        <Child type="ScrollView" skin="MW_ScrollView" offset="3 3 509 509" align="Stretch" name="ScrollView">
+        <Child type="Widget" skin="" offset="0 0 516 516" align="Stretch"/>
+        <!-- Spell headers -->
+        <Child type="ItemListWidgetHeader" skin="MW_SpellListHeader" position="3 3 509 50" align="Top Left" name="Header"/>
+        <Child type="ScrollView" skin="MW_ScrollView" offset="3 40 509 425" align="Stretch" name="ScrollView">
             <Property key="CanvasAlign" value="Left Top"/>
             <Property key="NeedMouse" value="true"/>
         </Child>

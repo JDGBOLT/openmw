@@ -39,6 +39,7 @@ namespace MWGui
     {
         mModel = new InventoryItemModel(container);
         mSortModel = new SortFilterItemModel(mModel);
+        mSortModel->setCategory(SortFilterItemModel::Category_Simple);
         mItemView->setModel(mSortModel);
         mItemView->resetScrollBars();
     }

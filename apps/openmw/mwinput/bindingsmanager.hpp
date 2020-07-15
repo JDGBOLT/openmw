@@ -24,7 +24,7 @@ namespace MWInput
         std::vector<int> getActionKeySorting();
         std::vector<int> getActionControllerSorting();
 
-        void enableDetectingBindingMode (int action, bool keyboard);
+        void enableDetectingBindingMode (int action, bool keyboard, bool quickloot, std::string key);
         bool isDetectingBindingState() const;
 
         void loadKeyDefaults(bool force = false);
@@ -60,6 +60,7 @@ namespace MWInput
         SDL_Scancode getKeyBinding(int actionId);
 
         void actionValueChanged(int action, float currentValue, float previousValue);
+        bool getQuickLootBlock();
 
     private:
         void setupSDLKeyMappings();

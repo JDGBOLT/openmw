@@ -6,6 +6,7 @@ cmake_install.cmake
 Makefile
 makefile
 build*
+release*
 prebuilt
 
 ##windows build process
@@ -28,6 +29,7 @@ Doxygen
 .idea
 cmake-build-*
 files/windows/*.aps
+.vscode
 ## qt-creator
 CMakeLists.txt.user*
 .vs

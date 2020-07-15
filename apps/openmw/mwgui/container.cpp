@@ -16,6 +16,8 @@
 
 #include "../mwscript/interpretercontext.hpp"
 
+#include "../mwgui/inventorywindow.hpp"
+
 #include "countdialog.hpp"
 #include "inventorywindow.hpp"
 
@@ -49,7 +51,16 @@ namespace MWGui
         mCloseButton->eventMouseButtonClick += MyGUI::newDelegate(this, &ContainerWindow::onCloseButtonClicked);
         mTakeButton->eventMouseButtonClick += MyGUI::newDelegate(this, &ContainerWindow::onTakeAllButtonClicked);
 
+        mItemView->getHeader()->eventItemClicked += MyGUI::newDelegate(this, &ContainerWindow::onHeaderClicked);
+
+
         setCoord(200,0,600,300);
+    }
+
+    void ContainerWindow::onHeaderClicked(int sort)
+    {
+        mSortModel->toggleSort(sort);
+        mItemView->update();
     }
 
     void ContainerWindow::onItemSelected(int index)
@@ -83,10 +94,24 @@ namespace MWGui
             std::string name = object.getClass().getName(object) + MWGui::ToolTips::getSoulString(object.getCellRef());
             dialog->openCountDialog(name, "#{sTake}", count);
             dialog->eventOkClicked.clear();
-            dialog->eventOkClicked += MyGUI::newDelegate(this, &ContainerWindow::dragItem);
+            dialog->eventOkClicked += MyGUI::newDelegate(this, &ContainerWindow::onTransferItem);
         }
         else
-            dragItem (nullptr, count);
+            onTransferItem(nullptr,count);
+    }
+
+    void ContainerWindow::onTransferItem(MyGUI::Widget* sender, int count)
+    {
+        const ItemStack& item = mModel->getItem(mSelectedItem);
+
+        if (!onTakeItem(item,count))
+            return;
+
+        std::string sound = item.mBase.getClass().getUpSoundId(item.mBase);
+        MWBase::Environment::get().getWindowManager()->playSound(sound);
+        mModel->moveItem(item,count,MWBase::Environment::get().getWindowManager()->getInventoryWindow()->getModel());
+        MWBase::Environment::get().getWindowManager()->getInventoryWindow()->updateItemView();
+        mItemView->update();
     }
 
     void ContainerWindow::dragItem(MyGUI::Widget* sender, int count)

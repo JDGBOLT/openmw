@@ -114,6 +114,244 @@
         </Widget>
     </Resource>
 
+    <Resource type="ResourceLayout" name="MW_ItemList" version="3.2.0">
+        <Widget type="Widget" position="0 0 0 35" name="Root">
+            <Widget type="HBox" skin="" position="0 0 0 35" align="Top HStretch" name="Item">
+                <Property key="NeedMouse" value="false"/>
+                <Widget type="Widget" position="0 0 40 26" align="VCenter Left" >
+                    <Widget type="ImageBox" position="0 0 26 26" align="Left Top" skin="ImageBox" name="Icon" />
+                </Widget>
+
+                <Widget type="SharedStateButton" skin="ItemListTextButton" position="0 0 0 28" name="Name" align="Left Top ">
+                    <Property key="TextAlign" value="Left VCenter" /> 
+                    <Property key="Caption" value="-"/>
+                    <Property key="Visible" value="false"/>
+                    <Property key="NeedMouse" value="true"/>
+                </Widget>
+
+                <Widget type="Spacer" />
+
+                <Widget type="SharedStateButton" skin="ItemListTextButton" position="0 0 90 28" name="ArmorClass" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="-"/>
+                    <Property key="Visible" value="false"/>
+                </Widget>
+                <Widget type="SharedStateButton" skin="ItemListTextButton" position="0 0 120 28" name="WeaponType" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="-"/>
+                    <Property key="Visible" value="false"/>
+                </Widget>
+                <Widget type="SharedStateButton" skin="ItemListTextButton" position="0 0 80 28" name="Value" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="-"/>
+                    <Property key="Visible" value="false"/>
+                </Widget>
+                <Widget type="SharedStateButton" skin="ItemListTextButton" position="0 0 80 28" name="Weight" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="-"/>
+                    <Property key="Visible" value="false"/>
+                </Widget>
+                <Widget type="SharedStateButton" skin="ItemListTextButton" position="0 0 80 28" name="Ratio" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" /> 
+                    <Property key="Caption" value="-"/>      
+                    <Property key="Visible" value="false"/> 
+                </Widget>
+            </Widget>
+        </Widget>
+    </Resource>
+
+    <Resource type="ResourceLayout" name="MW_ItemListHeader_Simple" version="3.2.0">
+        <Widget type="Widget" skin="" position="0 0 0 42" name="Root">
+            <Widget type="ImageBox" skin="MW_HLine" position="28 15 0 28" align="Stretch"/>
+            <Widget type="HBox" skin="SandBrightText" position="0 0 0 28" align="Left Top HStretch">
+                <Widget type="Button" position="0 0 28 20" align="Left Top" skin="SandBrightText">
+                    <Property key="TextAlign" value="Center VCenter" /> 
+                </Widget>
+                <Widget type="Button" skin="SandBrightText" position="0 0 150 28" name="Name" align="Left Top">
+                    <Property key="TextAlign" value="Left VCenter" /> 
+                    <Property key="Caption" value="Name"/>
+                </Widget>
+            </Widget>
+        </Widget>
+    </Resource>
+
+    <Resource type="ResourceLayout" name="MW_SpellList" version="3.2.0">
+        <Widget type="Widget" position="0 0 0 35" name="Root">
+            <Widget type="HBox" skin="" position="0 0 0 35" align="Top HStretch" name="Item">
+                <Property key="NeedMouse" value="false"/>
+                <Widget type="Widget" skin="" position="0 0 16 0" align="VCenter Left" />
+                <Widget type="SharedStateButton" skin="ItemListTextButton" position="0 0 300 28" name="Name" align="Left Top ">
+                    <Property key="TextAlign" value="Left VCenter" /> 
+                    <Property key="Caption" value="-"/>
+                    <Property key="Visible" value="true"/>
+                    <Property key="NeedMouse" value="true"/>
+                </Widget>
+
+                <Widget type="Spacer" />
+
+                <Widget type="SharedStateButton" skin="ItemListTextButton" position="0 0 125 28" name="School" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="-"/>
+                    <Property key="Visible" value="true"/>
+                </Widget>
+                <Widget type="SharedStateButton" skin="ItemListTextButton" position="0 0 120 28" name="CostChance" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="-"/>
+                    <Property key="Visible" value="true"/>
+                </Widget>
+            </Widget>
+        </Widget>
+    </Resource>
+
+    <Resource type="ResourceLayout" name="MW_SpellListHeader_All" version="3.2.0">
+        <Widget type="Widget" skin="" position="0 0 0 42" name="Root">
+            <Widget type="ImageBox" skin="MW_HLine" position="0 15 0 28" align="Stretch"/>
+            <Widget type="HBox" skin="SandBrightText" position="0 0 0 28" align="Left Top HStretch">
+                <Widget type="Widget" skin="" position="0 0 16 0" align="VCenter Left" />
+                <Widget type="Button" skin="SandBrightText" position="0 0 150 28" name="SpellName" align="Left Top">
+                    <Property key="TextAlign" value="Left VCenter" /> 
+                    <Property key="Caption" value="Name"/>
+                </Widget>
+
+                <Widget type="Spacer" />
+
+                <Widget type="Button" skin="SandBrightText" position="0 0 125 28" name="School" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="School"/>
+                </Widget>
+                <Widget type="Button" skin="SandBrightText" position="0 0 120 28" name="CostChance" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="Cost/Chance"/>
+                </Widget>
+            </Widget>
+        </Widget>
+    </Resource>
+
+    <Resource type="ResourceLayout" name="MW_SpellListHeader" version="3.2.0">
+        <Widget type="Widget" skin="" position="0 0 0 42" name="Root">
+            <Widget type="ImageBox" skin="MW_HLine" position="0 15 0 28" align="Stretch"/>
+            <Widget type="HBox" skin="SandBrightText" position="0 0 0 28" align="Left Top HStretch">
+                <Widget type="Widget" skin="" position="0 0 16 0" align="VCenter Left" />
+                <Widget type="Button" skin="SandBrightText" position="0 0 150 28" name="SpellName" align="Left Top">
+                    <Property key="TextAlign" value="Left VCenter" /> 
+                    <Property key="Caption" value="Name"/>
+                </Widget>
+
+                <Widget type="Spacer" />
+
+                <Widget type="Button" skin="SandBrightText" position="0 0 120 28" name="CostChance" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="Cost/Chance"/>
+                </Widget>
+            </Widget>
+        </Widget>
+    </Resource>
+
+    <Resource type="ResourceLayout" name="MW_SpellListHeader_Simple" version="3.2.0">
+        <Widget type="Widget" skin="" position="0 0 0 42" name="Root">
+            <Widget type="ImageBox" skin="MW_HLine" position="0 15 0 28" align="Stretch"/>
+            <Widget type="HBox" skin="SandBrightText" position="0 0 0 28" align="Left Top HStretch">
+                <Widget type="Widget" skin="" position="0 0 16 0" align="VCenter Left" />
+                <Widget type="Button" skin="SandBrightText" position="0 0 0 28" name="SpellName" align="Left Top HStretch">
+                    <Property key="TextAlign" value="Left VCenter" /> 
+                    <Property key="Caption" value="Name"/>
+                </Widget>
+            </Widget>
+        </Widget>
+    </Resource>
+
+    <Resource type="ResourceLayout" name="MW_ItemListHeader_All" version="3.2.0">
+        <Widget type="Widget" skin="" position="0 0 0 42" name="Root">
+            <Widget type="ImageBox" skin="MW_HLine" position="28 15 0 28" align="Stretch"/>
+            <Widget type="HBox" skin="SandBrightText" position="0 0 0 28" align="Left Top HStretch">
+                <Widget type="Button" position="0 0 28 20" align="Left Top" skin="SandBrightText">
+                    <Property key="TextAlign" value="Center VCenter" /> 
+                </Widget>
+                <Widget type="Button" skin="SandBrightText" position="0 0 150 28" name="Name" align="Left Top">
+                    <Property key="TextAlign" value="Left VCenter" /> 
+                    <Property key="Caption" value="Name"/>
+                </Widget>
+                <Widget type="Spacer" />
+                <Widget type="Button" skin="SandBrightText" position="0 0 80 28" name="Value" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="Value"/>
+                </Widget>
+                <Widget type="Button" skin="SandBrightText" position="0 0 80 28" name="Weight" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="Weight"/>
+                </Widget>
+                <Widget type="Button" skin="SandBrightText" position="0 0 80 28" name="Ratio" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" /> 
+                    <Property key="Caption" value="V/W"/>  
+                </Widget>
+            </Widget>
+        </Widget>
+    </Resource>
+
+    <Resource type="ResourceLayout" name="MW_ItemListHeader_Weapon" version="3.2.0">
+        <Widget type="Widget" skin="" position="0 0 0 42" name="Root">
+            <Widget type="ImageBox" skin="MW_HLine" position="28 15 0 28" align="VStretch HStretch"/>
+            <Widget type="HBox" skin="SandBrightText" position="0 0 0 28" align="Left Top HStretch">
+                <Widget type="Button" position="0 0 28 20" align="Left Top" skin="SandBrightText">
+                    <Property key="TextAlign" value="Center VCenter" /> 
+                </Widget>
+                <Widget type="Button" skin="SandBrightText" position="0 0 150 28" name="Name" align="Left Top">
+                    <Property key="TextAlign" value="Left VCenter" /> 
+                    <Property key="Caption" value="Name"/>
+                </Widget>
+                <Widget type="Spacer" />
+                <Widget type="Button" skin="SandBrightText" position="0 0 130 28" name="WeaponType" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="Type"/>
+                </Widget>
+                <Widget type="Button" skin="SandBrightText" position="0 0 80 28" name="Value" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="Value"/>
+                </Widget>
+                <Widget type="Button" skin="SandBrightText" position="0 0 80 28" name="Weight" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="Weight"/>
+                </Widget>
+                <Widget type="Button" skin="SandBrightText" position="0 0 80 28" name="Ratio" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" /> 
+                    <Property key="Caption" value="V/W"/> 
+                </Widget>
+            </Widget>
+        </Widget>
+    </Resource>
+
+    <Resource type="ResourceLayout" name="MW_ItemListHeader_Armor" version="3.2.0">
+        <Widget type="Widget" skin="" position="0 0 0 42" name="Root">
+            <Widget type="ImageBox" skin="MW_HLine" position="28 15 0 28" align="VStretch HStretch"/>
+            <Widget type="HBox" skin="SandBrightText" position="0 0 0 28" align="Left Top HStretch">
+                <Widget type="Button" position="0 0 28 20" align="Left Top" skin="SandBrightText" >
+                    <Property key="TextAlign" value="Center VCenter" /> 
+                </Widget>
+                <Widget type="Button" skin="SandBrightText" position="0 0 150 28" name="Name" align="Left Top">
+                    <Property key="TextAlign" value="Left VCenter" /> 
+                    <Property key="Caption" value="Name"/>
+                </Widget>
+                <Widget type="Spacer" />
+                <Widget type="Button" skin="SandBrightText" position="0 0 90 28" name="ArmorClass" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="Class"/>
+                </Widget>
+                <Widget type="Button" skin="SandBrightText" position="0 0 80 28" name="Value" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="Value"/>
+                </Widget>
+                <Widget type="Button" skin="SandBrightText" position="0 0 80 28" name="Weight" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" />
+                    <Property key="Caption" value="Weight"/>
+                </Widget>
+                <Widget type="Button" skin="SandBrightText" position="0 0 80 28" name="Ratio" align="Right Top">
+                    <Property key="TextAlign" value="Right VCenter" /> 
+                    <Property key="Caption" value="V/W"/>     
+                </Widget>
+            </Widget>
+        </Widget>
+    </Resource>
+
     <Resource type="ResourceLayout" name="MW_ItemIcon" version="3.2.0">
         <Widget type="Widget" skin="" position="0 0 42 42" name="Root">
             <Widget type="ImageBox" skin="ImageBox" position="0 0 42 42" align="Stretch" name="Frame">

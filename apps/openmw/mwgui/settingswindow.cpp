@@ -205,6 +205,8 @@ namespace MWGui
         getWidget(mWaterTextureSize, "WaterTextureSize");
         getWidget(mWaterReflectionDetail, "WaterReflectionDetail");
 
+        getWidget(mMUIControls, "MUIControls");
+
 #ifndef WIN32
         // hide gamma controls since it currently does not work under Linux
         MyGUI::ScrollBar *gammaSlider;
@@ -512,6 +514,9 @@ namespace MWGui
         while (mControlsBox->getChildCount())
             MyGUI::Gui::getInstance().destroyWidget(mControlsBox->getChildAt(0));
 
+        while (mMUIControls->getChildCount())
+            MyGUI::Gui::getInstance().destroyWidget(mMUIControls->getChildAt(0));
+
         MWBase::Environment::get().getWindowManager()->removeStaticMessageBox();
         std::vector<int> actions;
         if(mKeyboardMode)
@@ -537,7 +542,7 @@ namespace MWGui
             Gui::SharedStateButton* rightText = mControlsBox->createWidget<Gui::SharedStateButton>("SandTextButton", MyGUI::IntCoord(), MyGUI::Align::Default);
             rightText->setCaptionWithReplacing(binding);
             rightText->setTextAlign (MyGUI::Align::Right);
-            rightText->setUserData(action); // save the action id for callbacks
+            rightText->setUserData(std::tuple<int,bool,std::string>(action,false,"")); // save the action id for callbacks
             rightText->eventMouseButtonClick += MyGUI::newDelegate(this, &SettingsWindow::onRebindAction);
             rightText->eventMouseWheel += MyGUI::newDelegate(this, &SettingsWindow::onInputTabMouseWheel);
 
@@ -547,39 +552,67 @@ namespace MWGui
             Gui::SharedStateButton::createButtonGroup(group);
         }
 
-        layoutControlsBox();
+        static const std::vector<std::string> keys {"key quickloot take", "key quickloot takeall"};
+        static const std::vector<std::string> descriptions = {"Take", "Take All"};
+        size_t i = 0;
+        for (const auto& key : keys)
+        {
+            std::string desc = descriptions[i];
+            std::string binding = Settings::Manager::getString(key,"MorroUI");
+
+            Gui::SharedStateButton* leftText = mMUIControls->createWidget<Gui::SharedStateButton>("SandTextButton", MyGUI::IntCoord(), MyGUI::Align::Default);
+            leftText->setCaptionWithReplacing(desc);
+
+            Gui::SharedStateButton* rightText = mMUIControls->createWidget<Gui::SharedStateButton>("SandTextButton", MyGUI::IntCoord(), MyGUI::Align::Default);
+            rightText->setCaptionWithReplacing(binding);
+            rightText->setTextAlign (MyGUI::Align::Right);
+            rightText->setUserData(std::tuple<int,bool,std::string>(0,true,key));
+            rightText->eventMouseButtonClick += MyGUI::newDelegate(this, &SettingsWindow::onRebindAction);
+            rightText->eventMouseWheel += MyGUI::newDelegate(this, &SettingsWindow::onInputTabMouseWheel);
+
+            Gui::ButtonGroup group;
+            group.push_back(leftText);
+            group.push_back(rightText);
+            Gui::SharedStateButton::createButtonGroup(group);
+            i++;
+        }
+
+        layoutControlsBox(mControlsBox);
+        layoutControlsBox(mMUIControls);
     }
 
-    void SettingsWindow::layoutControlsBox()
+    void SettingsWindow::layoutControlsBox(MyGUI::ScrollView* target)
     {
-        const int h = 18;
-        const int w = mControlsBox->getWidth() - 28;
-        const int noWidgetsInRow = 2;
-        const int totalH = mControlsBox->getChildCount() / noWidgetsInRow * h;
 
-        for (size_t i = 0; i < mControlsBox->getChildCount(); i++)
+        const int h = 18;
+        int height = target->getChildCount() * h;
+        bool scrollVisible = height > target->getHeight();
+        int rightMargin = (scrollVisible) ? 28 : 0;
+        const int w = target->getWidth() - rightMargin;
+        const int noWidgetsInRow = 2;
+        const int totalH = target->getChildCount() / noWidgetsInRow * h;
+
+        for (size_t i = 0; i < target->getChildCount(); i++)
         {
-            MyGUI::Widget * widget = mControlsBox->getChildAt(i);
+            MyGUI::Widget * widget = target->getChildAt(i);
             widget->setCoord(0, i / noWidgetsInRow * h, w, h);
         }
 
         // Canvas size must be expressed with VScroll disabled, otherwise MyGUI would expand the scroll area when the scrollbar is hidden
-        mControlsBox->setVisibleVScroll(false);
-        mControlsBox->setCanvasSize (mControlsBox->getWidth(), std::max(totalH, mControlsBox->getHeight()));
-        mControlsBox->setVisibleVScroll(true);
+        target->setVisibleVScroll(false);
+        target->setCanvasSize (target->getWidth(), std::max(totalH, target->getHeight()));
+        target->setVisibleVScroll(true);
     }
 
     void SettingsWindow::onRebindAction(MyGUI::Widget* _sender)
     {
-        int actionId = *_sender->getUserData<int>();
+        auto action = *_sender->getUserData<std::tuple<int,bool,std::string>>();
 
         _sender->castType<MyGUI::Button>()->setCaptionWithReplacing("#{sNone}");
 
         MWBase::Environment::get().getWindowManager ()->staticMessageBox ("#{sControlsMenu3}");
         MWBase::Environment::get().getWindowManager ()->disallowMouse();
-
-        MWBase::Environment::get().getInputManager ()->enableDetectingBindingMode (actionId, mKeyboardMode);
-
+        MWBase::Environment::get().getInputManager ()->enableDetectingBindingMode (std::get<0>(action), mKeyboardMode, std::get<1>(action), std::get<2>(action));
     }
 
     void SettingsWindow::onInputTabMouseWheel(MyGUI::Widget* _sender, int _rel)
@@ -618,7 +651,8 @@ namespace MWGui
 
     void SettingsWindow::onWindowResize(MyGUI::Window *_sender)
     {
-        layoutControlsBox();
+        layoutControlsBox(mControlsBox);
+        layoutControlsBox(mMUIControls);
     }
 
     void SettingsWindow::resetScrollbars()

@@ -234,7 +234,7 @@ namespace MWClass
         {
             // display value in feet
             const float combatDistance = store.get<ESM::GameSetting>().find("fCombatDistance")->mValue.getFloat() * ref->mBase->mData.mReach;
-            text += MWGui::ToolTips::getWeightString(combatDistance / Constants::UnitsPerFoot, "#{sRange}");
+            text += "\n#{sRange}: " + MyGUI::utility::toString(combatDistance / Constants::UnitsPerFoot);
             text += " #{sFeet}";
         }
 
@@ -244,8 +244,8 @@ namespace MWClass
             text += MWGui::ToolTips::getPercentString(ref->mBase->mData.mSpeed, "#{sAttributeSpeed}");
         }
 
-        text += MWGui::ToolTips::getWeightString(ref->mBase->mData.mWeight, "#{sWeight}");
-        text += MWGui::ToolTips::getValueString(ref->mBase->mData.mValue, "#{sValue}");
+        info.weight = MWGui::ToolTips::getWeightString(ref->mBase->mData.mWeight, "#{sWeight}");
+        info.value = MWGui::ToolTips::getValueString(ref->mBase->mData.mValue, "#{sValue}");
 
         info.enchant = ref->mBase->mEnchant;
 

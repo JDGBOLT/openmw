@@ -1,5 +1,6 @@
 #include "tradewindow.hpp"
 
+#include <MyGUI_Window.h>
 #include <MyGUI_Button.h>
 #include <MyGUI_InputManager.h>
 #include <MyGUI_ControllerManager.h>
@@ -54,11 +55,16 @@ namespace MWGui
         , mCurrentBalance(0)
         , mCurrentMerchantOffer(0)
     {
-        getWidget(mFilterAll, "AllButton");
-        getWidget(mFilterWeapon, "WeaponButton");
-        getWidget(mFilterApparel, "ApparelButton");
-        getWidget(mFilterMagic, "MagicButton");
-        getWidget(mFilterMisc, "MiscButton");
+        getWidget(mAllButton,"AllButton"); 
+        getWidget(mWeaponButton,"WeaponButton"); 
+        getWidget(mArmorButton,"ArmorButton"); 
+        getWidget(mClothButton,"ClothButton"); 
+        getWidget(mPotionButton,"PotionButton"); 
+        getWidget(mIngredientButton,"IngredientButton"); 
+        getWidget(mBookButton,"BookButton"); 
+        getWidget(mToolButton,"ToolButton"); 
+        getWidget(mMagicButton,"MagicButton"); 
+        getWidget(mMiscButton,"MiscButton"); 
 
         getWidget(mMaxSaleButton, "MaxSaleButton");
         getWidget(mCancelButton, "CancelButton");
@@ -72,17 +78,24 @@ namespace MWGui
         getWidget(mBottomPane, "BottomPane");
         getWidget(mFilterEdit, "FilterEdit");
 
+        getWidget(mCategories,"Categories"); 
+
         getWidget(mItemView, "ItemView");
         mItemView->eventItemClicked += MyGUI::newDelegate(this, &TradeWindow::onItemSelected);
+        mItemView->getHeader()->eventItemClicked += MyGUI::newDelegate(this, &TradeWindow::onHeaderClicked);
+    
+        mAllButton->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onFilterChanged);
+        mWeaponButton->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onFilterChanged);
+        mArmorButton->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onFilterChanged);
+        mClothButton->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onFilterChanged);
+        mPotionButton->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onFilterChanged);
+        mIngredientButton->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onFilterChanged);
+        mBookButton->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onFilterChanged);
+        mMiscButton->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onFilterChanged);
+        mToolButton->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onFilterChanged);
+        mMagicButton->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onFilterChanged);
 
-        mFilterAll->setStateSelected(true);
-
-        mFilterAll->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onFilterChanged);
-        mFilterWeapon->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onFilterChanged);
-        mFilterApparel->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onFilterChanged);
-        mFilterMagic->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onFilterChanged);
-        mFilterMisc->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onFilterChanged);
-        mFilterEdit->eventEditTextChange += MyGUI::newDelegate(this, &TradeWindow::onNameFilterChanged);
+        mAllButton->setStateSelected(true);
 
         mCancelButton->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onCancelButtonClicked);
         mOfferButton->eventMouseButtonClick += MyGUI::newDelegate(this, &TradeWindow::onOfferButtonClicked);
@@ -97,6 +110,7 @@ namespace MWGui
         mTotalBalance->setMinValue(std::numeric_limits<int>::min()+1); // disallow INT_MIN since abs(INT_MIN) is undefined
 
         setCoord(400, 0, 400, 300);
+        adjustCategoryHeader();
     }
 
     void TradeWindow::restock()
@@ -135,16 +149,23 @@ namespace MWGui
 
         updateLabels();
 
-        setTitle(actor.getClass().getName(actor));
-
-        onFilterChanged(mFilterAll);
+        //setTitle(actor.getClass().getName(actor));
+        setTitle(mAllButton->getUserString("Title"));
+        onFilterChanged(mAllButton);
         mFilterEdit->setCaption("");
     }
 
     void TradeWindow::onFrame(float dt)
     {
         checkReferenceAvailable();
+        adjustCategoryHeader();
     }
+
+    void TradeWindow::onHeaderClicked(int sort)
+    {
+        mSortModel->toggleSort(sort);
+        mItemView->update();
+    }   
 
     void TradeWindow::onNameFilterChanged(MyGUI::EditBox* _sender)
     {
@@ -154,26 +175,43 @@ namespace MWGui
 
     void TradeWindow::onFilterChanged(MyGUI::Widget* _sender)
     {
-        if (_sender == mFilterAll)
+        setTitle(_sender->getUserString("Title"));
+        if (_sender == mAllButton)
             mSortModel->setCategory(SortFilterItemModel::Category_All);
-        else if (_sender == mFilterWeapon)
+        else if (_sender == mWeaponButton)
             mSortModel->setCategory(SortFilterItemModel::Category_Weapon);
-        else if (_sender == mFilterApparel)
-            mSortModel->setCategory(SortFilterItemModel::Category_Apparel);
-        else if (_sender == mFilterMagic)
+        else if (_sender == mArmorButton)
+            mSortModel->setCategory(SortFilterItemModel::Category_Armor);
+        else if (_sender == mClothButton)
+            mSortModel->setCategory(SortFilterItemModel::Category_Cloth);
+        else if (_sender == mPotionButton)
+            mSortModel->setCategory(SortFilterItemModel::Category_Potion);
+        else if (_sender == mIngredientButton)
+            mSortModel->setCategory(SortFilterItemModel::Category_Ingredient);
+        else if (_sender == mMagicButton)
             mSortModel->setCategory(SortFilterItemModel::Category_Magic);
-        else if (_sender == mFilterMisc)
+        else if (_sender == mBookButton)
+            mSortModel->setCategory(SortFilterItemModel::Category_Book);
+        else if (_sender == mToolButton)
+            mSortModel->setCategory(SortFilterItemModel::Category_Tool);
+        else if (_sender == mMiscButton)
             mSortModel->setCategory(SortFilterItemModel::Category_Misc);
 
-        mFilterAll->setStateSelected(false);
-        mFilterWeapon->setStateSelected(false);
-        mFilterApparel->setStateSelected(false);
-        mFilterMagic->setStateSelected(false);
-        mFilterMisc->setStateSelected(false);
-
-        _sender->castType<MyGUI::Button>()->setStateSelected(true);
+        mAllButton->setStateSelected(false);
+        mWeaponButton->setStateSelected(false);
+        mArmorButton->setStateSelected(false);
+        mClothButton->setStateSelected(false);
+        mPotionButton->setStateSelected(false);
+        mIngredientButton->setStateSelected(false);
+        mToolButton->setStateSelected(false);
+        mBookButton->setStateSelected(false);
+        mMagicButton->setStateSelected(false);
+        mMiscButton->setStateSelected(false);
 
         mItemView->update();
+
+        _sender->castType<Gui::ImagePushButton>()->setStateSelected(true);
+        adjustCategoryHeader();
     }
 
     int TradeWindow::getMerchantServices()
@@ -365,6 +403,32 @@ namespace MWGui
         MWBase::Environment::get().getWindowManager()->removeGuiMode(GM_Barter);
 
         restock();
+    }
+
+    void TradeWindow::adjustCategoryHeader()
+    {
+        static int maxPadding = MyGUI::utility::parseInt(mCategories->getUserString("MaxPadding"));
+        static int maxSize = MyGUI::utility::parseInt(mCategories->getUserString("MaxSize"));
+        static int minMargin = MyGUI::utility::parseInt(mCategories->getUserString("MinMargin"));
+        static int minSize = MyGUI::utility::parseInt(mCategories->getUserString("MinSize"));
+        static int padding = MyGUI::utility::parseInt(mCategories->getUserString("Padding"));
+        
+        int count = mCategories->getChildCount();
+
+        int width = std::min(maxSize,std::max(static_cast<int>(((mCategories->getWidth()-(2*minMargin)-(padding*count)) / static_cast<float>(count))), minSize));
+        int sidemargin = ((mCategories->getWidth() - ((width+padding) * count))/2) + 8; 
+        
+        if (sidemargin < 0)
+            sidemargin = minMargin;
+
+        MyGUI::Widget* widget = mCategories->getChildAt(0);
+        int top = (mCategories->getHeight()-width)/2;
+        widget->setCoord(MyGUI::IntCoord(sidemargin,top,width,width));
+        for (int i = 1; i < count; i++)
+        {
+            widget = mCategories->getChildAt(i);
+            widget->setCoord(MyGUI::IntCoord(mCategories->getChildAt(i-1)->getLeft()+width+padding,top,width,width));
+        }
     }
 
     void TradeWindow::onAccept(MyGUI::EditBox *sender)

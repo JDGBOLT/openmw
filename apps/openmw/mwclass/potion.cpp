@@ -109,8 +109,8 @@ namespace MWClass
 
         std::string text;
 
-        text += "\n#{sWeight}: " + MWGui::ToolTips::toString(ref->mBase->mData.mWeight);
-        text += MWGui::ToolTips::getValueString(ref->mBase->mData.mValue, "#{sValue}");
+        info.weight = MWGui::ToolTips::getValueString(ref->mBase->mData.mWeight, "#{sWeight}");
+        info.value = MWGui::ToolTips::getValueString(ref->mBase->mData.mValue, "#{sValue}");
 
         info.effects = MWGui::Widgets::MWEffectList::effectListFromESM(&ref->mBase->mEffects);
 

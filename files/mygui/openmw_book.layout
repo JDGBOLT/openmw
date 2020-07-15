@@ -4,8 +4,12 @@
 
 <Widget type="Window" skin="" layer="JournalBooks" align="Left Top" position="0 0 584 398" name="_Main">
 
-    <Widget type="ImageBox" skin="ImageBox" position="-71 0 728 398" align="Left Top" name="JImage">
-        <Property key="ImageTexture" value="textures\tx_menubook.dds"/>
+    <Widget type="ImageBox" skin="ImageBox" position="-71 0 728 398" align="Left Top" name="BookJacket">
+
+        <Widget type="ImageBox" skin="ImageBox" position="0 0 728 398" align="Left Top" name="JImage"/>
+
+        <!--<Property key="ImageTexture" value="textures\ui\book_overlay.dds"/>-->
+        
         <Widget type="Widget" position="71 0 584 398" align="Left Top">
 
             <Widget type="ImageButton" skin="ImageBox" position="40 358 64 32" name="TakeButton">
@@ -32,14 +36,16 @@
             </Widget>
 
             <Widget type="TextBox" skin="NormalText" position="30 358 250 16" name="LeftPageNumber">
-                <Property key="FontName" value="Journalbook Magic Cards"/>
-                <Property key="TextColour" value="0 0 0"/>
+                <Property key="FontName" value="KingThings"/>
+                <Property key="FontHeight" value="12"/>
+                <Property key="TextColour" value="0.1 0.1 0.1"/>
                 <Property key="TextAlign" value="Center"/>
                 <Property key="NeedMouse" value="false"/>
             </Widget>
             <Widget type="TextBox" skin="NormalText" position="310 358 250 16" name="RightPageNumber">
-                <Property key="FontName" value="Journalbook Magic Cards"/>
-                <Property key="TextColour" value="0 0 0"/>
+                <Property key="FontName" value="KingThings"/>
+                <Property key="FontHeight" value="12"/>
+                <Property key="TextColour" value="0.1 0.1 0.1"/>
                 <Property key="TextAlign" value="Center"/>
                 <Property key="NeedMouse" value="false"/>
             </Widget>
@@ -48,6 +54,7 @@
             <Widget type="Widget" skin="" position="310 15 250 328" name="RightPage"/>
         </Widget>
     </Widget>
+
 </Widget>
 
 </MyGUI>

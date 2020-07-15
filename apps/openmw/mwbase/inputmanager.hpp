@@ -60,7 +60,7 @@ namespace MWBase
             virtual std::vector<int> getActionControllerSorting() = 0;
             virtual int getNumActions() = 0;
             ///If keyboard is true, only pay attention to keyboard events. If false, only pay attention to controller events (excluding esc)
-            virtual void enableDetectingBindingMode (int action, bool keyboard) = 0;
+            virtual void enableDetectingBindingMode (int action, bool keyboard, bool quickloot, std::string key) = 0;
             virtual void resetToDefaultKeyBindings() = 0;
             virtual void resetToDefaultControllerBindings() = 0;
 

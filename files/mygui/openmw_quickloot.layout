@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<MyGUI type="Layout">
+    <Widget type="Widget" layer="Popup" position="0 0 350 200" name="_Main">
+        <Property key="NeedKey" value="false"/>
+        <Widget type="Widget" skin="HUD_Box" position = "0 0 350 200" align="Stretch">
+            <!-- Quick Loot Title -->
+            <Widget type="TextBox" skin="SandBrightText" position = "0 6 350 28" align="Top HCenter" name="Label">
+                <Property key="Caption" value="-"/>
+                <Property key="TextAlign" value="Center"/>
+            </Widget>
+            <!-- Quick Loot Item View -->
+            <Widget type="ItemView" skin="MW_ItemView" position="4 2 350 180" align="Left Top VStretch" name="QuickLoot">
+                <Property key="NeedKey" value="true"/>
+            </Widget>
+        </Widget>
+    </Widget>
+</MyGUI>
+

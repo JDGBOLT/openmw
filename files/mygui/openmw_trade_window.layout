@@ -6,36 +6,94 @@
         <Property key="MinSize" value="428 245"/>
 
         <!-- Categories -->
-        <Widget type="HBox" position="8 8 566 24" align="Left Top HStretch" name="Categories">
-            <Widget type="AutoSizedButton" skin="MW_Button" name="AllButton">
-                <Property key="Caption" value="#{sAllTab}"/>
+        <Widget type="Widget" skin="" position="8 8 568 80" align="Top Left HStretch" name="Categories">
+
+            <UserString key="MaxSize" value="52"/>
+            <UserString key="MaxPadding" value="23"/>
+            <UserString key="MinMargin" value="6"/>
+            <UserString key="MinSize" value="24"/>
+            <UserString key="Padding" value="18"/>
+
+            <Widget type="ImagePushButton" skin="ImageBox" name="AllButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\all_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\all_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\all_pressed.dds"/>
                 <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="All"/>
             </Widget>
-            <Widget type="AutoSizedButton" skin="MW_Button" name="WeaponButton">
-                <Property key="Caption" value="#{sWeaponTab}"/>
+            <Widget type="ImagePushButton" skin="ImageBox" name="WeaponButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\weapon_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\weapon_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\weapon_pressed.dds"/>
                 <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Weapons"/>
             </Widget>
-            <Widget type="AutoSizedButton" skin="MW_Button" name="ApparelButton">
-                <Property key="Caption" value="#{sApparelTab}"/>
+            <Widget type="ImagePushButton" skin="ImageBox" name="ArmorButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\armor_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\armor_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\armor_pressed.dds"/>
                 <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Armors"/>
             </Widget>
-            <Widget type="AutoSizedButton" skin="MW_Button" name="MagicButton">
-                <Property key="Caption" value="#{sMagicTab}"/>
+            <Widget type="ImagePushButton" skin="ImageBox" name="ClothButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\cloth_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\cloth_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\cloth_pressed.dds"/>
                 <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Clothing"/>
             </Widget>
-            <Widget type="AutoSizedButton" skin="MW_Button" name="MiscButton">
-                <Property key="Caption" value="#{sMiscTab}"/>
+            <Widget type="ImagePushButton" skin="ImageBox" name="PotionButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\potion_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\potion_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\potion_pressed.dds"/>
                 <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Potions"/>
             </Widget>
-            <!-- Search box-->
-            <Widget type="EditBox" skin="MW_TextBoxEditWithBorder" position="0 0 0 23" name="FilterEdit">
-                <UserString key="HStretch" value="true"/>
-                <UserString key="AcceptTab" value="true"/>
+            <Widget type="ImagePushButton" skin="ImageBox" name="IngredientButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\ingredient_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\ingredient_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\ingredient_pressed.dds"/>
+                <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Ingredients"/>
+            </Widget>
+            <Widget type="ImagePushButton" skin="ImageBox" name="MagicButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\magic_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\magic_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\magic_pressed.dds"/>
+                <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Magic Items"/>
+            </Widget>
+            <Widget type="ImagePushButton" skin="ImageBox" name="BookButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\book_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\book_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\book_pressed.dds"/>
+                <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Books"/>
+            </Widget>
+            <Widget type="ImagePushButton" skin="ImageBox" name="ToolButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\tool_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\tool_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\tool_pressed.dds"/>
+                <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Tools"/>
+            </Widget>
+            <Widget type="ImagePushButton" skin="ImageBox" name="MiscButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\misc_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\misc_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\misc_pressed.dds"/>
+                <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Miscellaneous"/>     
             </Widget>
         </Widget>
 
+        <!-- Search box-->
+        <Widget type="EditBox" skin="MW_TextBoxEditWithBorder" position="0 0 0 23" name="FilterEdit">
+            <UserString key="HStretch" value="true"/>
+            <UserString key="AcceptTab" value="true"/>
+        </Widget>
+
         <!-- Items -->
-        <Widget type="ItemView" skin="MW_ItemView" position="8 38 566 185" name="ItemView" align="Left Top Stretch">
+        <Widget type="ItemView" skin="MW_ItemView" position="8 80 566 140" name="ItemView" align="Left Top Stretch">
         </Widget>
 
         <Widget type="Widget" skin="" position="8 231 566 92" name="BottomPane" align="Left Bottom HStretch">

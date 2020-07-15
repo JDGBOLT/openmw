@@ -39,6 +39,8 @@ namespace MWGui
         void activateQuickKey(int index);
         void updateActivatedQuickKey();
 
+        bool isAssigned(const MWWorld::Ptr &item) const;
+
         /// @note This enum is serialized, so don't move the items around!
         enum QuickKeyType
         {

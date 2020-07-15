@@ -79,7 +79,7 @@ namespace MWInput
         virtual int getNumActions() { return A_Last; }
         virtual std::vector<int> getActionKeySorting();
         virtual std::vector<int> getActionControllerSorting();
-        virtual void enableDetectingBindingMode (int action, bool keyboard);
+        virtual void enableDetectingBindingMode (int action, bool keyboard, bool quickloot, std::string key);
         virtual void resetToDefaultKeyBindings();
         virtual void resetToDefaultControllerBindings();
 

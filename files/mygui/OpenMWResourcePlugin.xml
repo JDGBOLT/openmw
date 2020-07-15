@@ -11,6 +11,15 @@
             <Parameter key="ImagePushed" value="String"/>
             <Parameter key="ImageNormal" value="String"/>
         </Widget>
+        <Widget name="ImagePushButton">
+            <Property key="DefaultSkin" value="ImageBox"/>
+            <Property key="Skin" value="ImageBox" group="Plugin" name="ImagePushButton"/>
+            <Property key="Parent" value="true"/>
+            <Property key="Child" value="true"/>
+            <Parameter key="ImageHighlighted" value="String"/>
+            <Parameter key="ImagePushed" value="String"/>
+            <Parameter key="ImageNormal" value="String"/>
+        </Widget>
         <Widget name="VBox">
             <Property key="DefaultSkin" value=""/>
             <Property key="Skin" value="" group="Plugin" name="VBox"/>

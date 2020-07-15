@@ -233,9 +233,10 @@ namespace MWClass
                 + MWGui::ToolTips::toString(ref->mBase->mData.mHealth);
 
         if (typeText != "")
-            text += "\n#{sWeight}: " + MWGui::ToolTips::toString(ref->mBase->mData.mWeight) + " (" + typeText + ")";
+            text += "\n" + typeText;
 
-        text += MWGui::ToolTips::getValueString(ref->mBase->mData.mValue, "#{sValue}");
+        info.weight = MWGui::ToolTips::getValueString(ref->mBase->mData.mWeight, "#{sWeight}");
+        info.value = MWGui::ToolTips::getValueString(ref->mBase->mData.mValue, "#{sValue}");
 
         if (MWBase::Environment::get().getWindowManager()->getFullHelp()) {
             text += MWGui::ToolTips::getCellRefString(ptr.getCellRef());

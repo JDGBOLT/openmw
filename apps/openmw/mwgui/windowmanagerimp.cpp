@@ -77,6 +77,7 @@
 #include "statswindow.hpp"
 #include "messagebox.hpp"
 #include "tooltips.hpp"
+#include "quickloot.hpp"
 #include "scrollwindow.hpp"
 #include "bookwindow.hpp"
 #include "hud.hpp"
@@ -108,6 +109,9 @@
 #include "videowidget.hpp"
 #include "backgroundimage.hpp"
 #include "itemwidget.hpp"
+#include "itemlistwidget.hpp"
+#include "itemlistwidgetheader.hpp"
+#include "spelllistwidget.hpp"
 #include "screenfader.hpp"
 #include "debugwindow.hpp"
 #include "spellview.hpp"
@@ -137,6 +141,7 @@ namespace MWGui
       , mMap(nullptr)
       , mLocalMapRender(nullptr)
       , mToolTips(nullptr)
+      , mQuickLoot(nullptr)
       , mStatsWindow(nullptr)
       , mMessageBoxManager(nullptr)
       , mConsole(nullptr)
@@ -172,6 +177,7 @@ namespace MWGui
       , mHudEnabled(true)
       , mCursorVisible(true)
       , mCursorActive(false)
+      , mUseKeyTooltip(false)
       , mPlayerBounty(-1)
       , mGui(nullptr)
       , mGuiModes()
@@ -217,6 +223,9 @@ namespace MWGui
         ItemView::registerComponents();
         ItemChargeView::registerComponents();
         ItemWidget::registerComponents();
+        ItemListWidget::registerComponents();
+        ItemListWidgetHeader::registerComponents();
+        SpellListWidget::registerComponents();
         SpellView::registerComponents();
         Gui::registerAllWidgets();
 
@@ -363,13 +372,15 @@ namespace MWGui
 
         mToolTips = new ToolTips();
 
+        mQuickLoot = new QuickLoot();
+
         mScrollWindow = new ScrollWindow();
         mWindows.push_back(mScrollWindow);
         mGuiModeStates[GM_Scroll] = GuiModeState(mScrollWindow);
         mGuiModeStates[GM_Scroll].mOpenSound = "scroll";
         mGuiModeStates[GM_Scroll].mCloseSound = "scroll";
 
-        mBookWindow = new BookWindow();
+        mBookWindow = new BookWindow(mResourceSystem);
         mWindows.push_back(mBookWindow);
         mGuiModeStates[GM_Book] = GuiModeState(mBookWindow);
         mGuiModeStates[GM_Book].mOpenSound = "book open";
@@ -521,6 +532,7 @@ namespace MWGui
             delete mSoulgemDialog;
             delete mCursorManager;
             delete mToolTips;
+            delete mQuickLoot;
 
             cleanupGarbage();
 
@@ -592,6 +604,7 @@ namespace MWGui
 
         mHud->setVisible(mHudEnabled && !loading);
         mToolTips->setVisible(mHudEnabled && !loading);
+        mQuickLoot->setVisible(mHudEnabled && !loading);
 
         bool gameMode = !isGuiMode();
 
@@ -847,6 +860,7 @@ namespace MWGui
             mMessageBoxManager->onFrame(frameDuration);
 
         mToolTips->onFrame(frameDuration);
+        mQuickLoot->onFrame(frameDuration);
 
         if (mLocalMapRender)
             mLocalMapRender->cleanupCameras();
@@ -946,6 +960,7 @@ namespace MWGui
     void WindowManager::setFocusObject(const MWWorld::Ptr& focus)
     {
         mToolTips->setFocusObject(focus);
+        mQuickLoot->setFocusObject(focus);
 
         if(mHud && (mShowOwned == 2 || mShowOwned == 3))
         {
@@ -957,6 +972,7 @@ namespace MWGui
     void WindowManager::setFocusObjectScreenCoords(float min_x, float min_y, float max_x, float max_y)
     {
         mToolTips->setFocusObjectScreenCoords(min_x, min_y, max_x, max_y);
+        mQuickLoot->setFocusObjectScreenCoords(min_x, min_y, max_x, max_y);
     }
 
     bool WindowManager::toggleFullHelp()
@@ -1049,6 +1065,8 @@ namespace MWGui
         mToolTips->setDelay(Settings::Manager::getFloat("tooltip delay", "GUI"));
 
         bool changeRes = false;
+
+        mQuickLoot->setDelay(Settings::Manager::getFloat("tooltip delay", "GUI"));
         for (const auto& setting : changed)
         {
             if (setting.first == "HUD" && setting.second == "crosshair")
@@ -1245,7 +1263,7 @@ namespace MWGui
 
         const ESM::Spell* spell = mStore->get<ESM::Spell>().find(spellId);
 
-        mSpellWindow->setTitle(spell->mName);
+        //mSpellWindow->setTitle(spell->mName);
     }
 
     void WindowManager::setSelectedEnchantItem(const MWWorld::Ptr& item)
@@ -1257,7 +1275,7 @@ namespace MWGui
 
         int chargePercent = static_cast<int>(item.getCellRef().getNormalizedEnchantmentCharge(ench->mData.mCharge) * 100);
         mHud->setSelectedEnchantItem(item, chargePercent);
-        mSpellWindow->setTitle(item.getClass().getName(item));
+        //mSpellWindow->setTitle(item.getClass().getName(item));
     }
 
     const MWWorld::Ptr &WindowManager::getSelectedEnchantItem() const
@@ -1274,7 +1292,7 @@ namespace MWGui
             durabilityPercent = static_cast<int>(item.getClass().getItemNormalizedHealth(item) * 100);
         }
         mHud->setSelectedWeapon(item, durabilityPercent);
-        mInventoryWindow->setTitle(item.getClass().getName(item));
+        //mInventoryWindow->setTitle(item.getClass().getName(item));
     }
 
     const MWWorld::Ptr &WindowManager::getSelectedWeapon() const
@@ -1292,14 +1310,14 @@ namespace MWGui
         if (player->getDrawState() == MWMechanics::DrawState_Spell)
             player->setDrawState(MWMechanics::DrawState_Nothing);
 
-        mSpellWindow->setTitle("#{sNone}");
+        //mSpellWindow->setTitle("#{sNone}");
     }
 
     void WindowManager::unsetSelectedWeapon()
     {
         mSelectedWeapon = MWWorld::Ptr();
         mHud->unsetSelectedWeapon();
-        mInventoryWindow->setTitle("#{sSkillHandtohand}");
+        //mInventoryWindow->setTitle("#{sSkillHandtohand}");
     }
 
     void WindowManager::getMousePosition(int &x, int &y)
@@ -1333,6 +1351,8 @@ namespace MWGui
     MWGui::CountDialog* WindowManager::getCountDialog() { return mCountDialog; }
     MWGui::ConfirmationDialog* WindowManager::getConfirmationDialog() { return mConfirmationDialog; }
     MWGui::TradeWindow* WindowManager::getTradeWindow() { return mTradeWindow; }
+    MWGui::QuickKeysMenu* WindowManager::getQuickKeysMenu() { return mQuickKeysMenu; }
+    MWGui::QuickLoot* WindowManager::getQuickLoot() { return mQuickLoot; }
 
     void WindowManager::useItem(const MWWorld::Ptr &item, bool bypassBeastRestrictions)
     {
@@ -1429,6 +1449,11 @@ namespace MWGui
         return mConsole && mConsole->isVisible();
     }
 
+    void WindowManager::notifyMouseWheel(int rel)
+    {
+        mQuickLoot->notifyMouseWheel(rel);
+    }
+
     MWGui::GuiMode WindowManager::getMode() const
     {
         if (mGuiModes.empty())
@@ -1474,6 +1499,16 @@ namespace MWGui
     void WindowManager::activateQuickKey (int index)
     {
         mQuickKeysMenu->activateQuickKey(index);
+    }
+
+    void WindowManager::setKeyTooltip(bool enable)
+    {
+        mUseKeyTooltip = enable;
+    }
+
+    bool WindowManager::isKeyTooltip() const
+    {
+        return mUseKeyTooltip;
     }
 
     bool WindowManager::getSubtitlesEnabled ()
@@ -1649,6 +1684,7 @@ namespace MWGui
         mMessageBoxManager->clear();
 
         mToolTips->clear();
+        mQuickLoot->clear();
 
         mSelectedSpell.clear();
         mCustomMarkers.clear();

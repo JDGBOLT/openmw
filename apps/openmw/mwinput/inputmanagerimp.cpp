@@ -11,6 +11,7 @@
 #include "../mwbase/environment.hpp"
 
 #include "../mwworld/esmstore.hpp"
+#include "../mwgui/quickloot.hpp"
 
 #include "actionmanager.hpp"
 #include "bindingsmanager.hpp"
@@ -140,6 +141,10 @@ namespace MWInput
 
     void InputManager::toggleControlSwitch(const std::string& sw, bool value)
     {
+        if (sw == "playercontrols" && !value)
+            MWBase::Environment::get().getWindowManager()->getQuickLoot()->setEnabled(false);
+        else 
+            MWBase::Environment::get().getWindowManager()->getQuickLoot()->setEnabled(true);
         mControlSwitch->set(sw, value);
     }
 
@@ -173,9 +178,9 @@ namespace MWInput
         return mBindingsManager->getActionControllerSorting();
     }
 
-    void InputManager::enableDetectingBindingMode(int action, bool keyboard)
+    void InputManager::enableDetectingBindingMode(int action, bool keyboard, bool quickloot, std::string key)
     {
-        mBindingsManager->enableDetectingBindingMode(action, keyboard);
+        mBindingsManager->enableDetectingBindingMode(action, keyboard, quickloot, key);
     }
 
     int InputManager::countSavedGameRecords() const

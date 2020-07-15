@@ -97,7 +97,9 @@ namespace
 
         MWGui::BookPage* getPage (char const * name)
         {
-            return getWidget <MWGui::BookPage> (name);
+            auto page = getWidget <MWGui::BookPage> (name);
+            page->mFontHeight = Settings::Manager::getInt("book font size", "MorroUI");
+            return page;
         }
 
         JournalWindowImpl (MWGui::JournalViewModel::Ptr Model, bool questList, ToUTF8::FromType encoding)

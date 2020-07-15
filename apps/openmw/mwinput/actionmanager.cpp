@@ -23,6 +23,7 @@
 
 #include "actions.hpp"
 #include "bindingsmanager.hpp"
+#include "../mwgui/quickloot.hpp"
 
 namespace MWInput
 {
@@ -49,7 +50,7 @@ namespace MWInput
     {
         // Disable movement in Gui mode
         if (MWBase::Environment::get().getWindowManager()->isGuiMode()
-            || MWBase::Environment::get().getStateManager()->getState() != MWBase::StateManager::State_Running)
+            || MWBase::Environment::get().getStateManager()->getState() != MWBase::StateManager::State_Running || mBindingsManager->getQuickLootBlock())
         {
             mAttemptJump = false;
             return;
@@ -275,11 +276,11 @@ namespace MWInput
             MWBase::Environment::get().getWindowManager()->toggleDebugWindow();
             break;
         case A_ZoomIn:
-            if (MWBase::Environment::get().getInputManager()->getControlSwitch("playerviewswitch") && MWBase::Environment::get().getInputManager()->getControlSwitch("playercontrols") && !MWBase::Environment::get().getWindowManager()->isGuiMode())
+            if (MWBase::Environment::get().getInputManager()->getControlSwitch("playerviewswitch") && MWBase::Environment::get().getInputManager()->getControlSwitch("playercontrols") && !MWBase::Environment::get().getWindowManager()->isGuiMode() && !MWBase::Environment::get().getWindowManager()->getQuickLoot()->isVisible())
                 MWBase::Environment::get().getWorld()->setCameraDistance(ZOOM_SCALE, true, true);
             break;
         case A_ZoomOut:
-            if (MWBase::Environment::get().getInputManager()->getControlSwitch("playerviewswitch") && MWBase::Environment::get().getInputManager()->getControlSwitch("playercontrols") && !MWBase::Environment::get().getWindowManager()->isGuiMode())
+            if (MWBase::Environment::get().getInputManager()->getControlSwitch("playerviewswitch") && MWBase::Environment::get().getInputManager()->getControlSwitch("playercontrols") && !MWBase::Environment::get().getWindowManager()->isGuiMode() && !MWBase::Environment::get().getWindowManager()->getQuickLoot()->isVisible())
                 MWBase::Environment::get().getWorld()->setCameraDistance(-ZOOM_SCALE, true, true);
             break;
         case A_QuickSave:

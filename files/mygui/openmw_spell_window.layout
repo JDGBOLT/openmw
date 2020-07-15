@@ -9,23 +9,105 @@
             <Widget type="Widget" skin="" position="2 1 264 20" align="Left Top Stretch" name="EffectsBox"/>
         </Widget>
 
+        <!-- Categories -->
+        <Widget type="Widget" skin="" position="8 32 268 55" align="Left Top HStretch" name="Categories">
+
+            <UserString key="MaxSize" value="52"/>
+            <UserString key="MaxPadding" value="23"/>
+            <UserString key="MinMargin" value="6"/>
+            <UserString key="MinSize" value="24"/>
+            <UserString key="Padding" value="18"/>
+
+            <Widget type="ImagePushButton" skin="ImageBox" name="AllButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\spellall_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\spellall_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\spellall_pressed.dds"/>
+                <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="All"/>
+            </Widget>
+            <Widget type="ImagePushButton" skin="ImageBox" name="PowersButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\power_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\power_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\power_pressed.dds"/>
+                <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Powers"/>
+            </Widget>
+            <Widget type="ImagePushButton" skin="ImageBox" name="ItemsButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\item_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\item_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\item_pressed.dds"/>
+                <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Enchanted Items"/>
+            </Widget>
+            <Widget type="ImagePushButton" skin="ImageBox" name="AlterationButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\alteration_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\alteration_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\alteration_pressed.dds"/>
+                <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Alteration"/>
+            </Widget>
+            <Widget type="ImagePushButton" skin="ImageBox" name="ConjurationButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\conjuration_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\conjuration_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\conjuration_pressed.dds"/>
+                <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Conjuration"/>
+            </Widget>
+            <Widget type="ImagePushButton" skin="ImageBox" name="DestructionButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\destruction_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\destruction_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\destruction_pressed.dds"/>
+                <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Destruction"/>
+            </Widget>
+            <Widget type="ImagePushButton" skin="ImageBox" name="IllusionButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\illusion_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\illusion_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\illusion_pressed.dds"/>
+                <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Illusion"/>
+            </Widget>
+            <Widget type="ImagePushButton" skin="ImageBox" name="MysticismButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\mysticism_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\mysticism_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\mysticism_pressed.dds"/>
+                <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Mysticism"/>
+            </Widget>
+            <Widget type="ImagePushButton" skin="ImageBox" name="RestorationButton" align="Left VCenter">
+                <Property key="ImageHighlighted" value="textures\ui\restoration_over.dds"/>
+                <Property key="ImageNormal" value="textures\ui\restoration_idle.dds"/>
+                <Property key="ImagePushed" value="textures\ui\restoration_pressed.dds"/>
+                <Property key="NeedKey" value="false"/>
+                <UserString key="Title" value="Restoration"/>
+            </Widget>
+        </Widget>
+
         <!-- Spell list -->
-        <Widget type="SpellView" skin="MW_SpellView" position="8 38 268 490" align="Left Top Stretch" name="SpellView">
+        <Widget type="SpellView" skin="MW_SpellView" position="8 90 272 460" align="Left Top Stretch" name="SpellView">
         </Widget>
 
         <Widget type="HBox" position="8 535 268 23" align="Right Bottom HStretch">
-            <Widget type="Spacer"/>
+            <!-- Effect Filter -->
+            <Widget type="ComboBox" skin="MW_ComboBox" position="8 535 268 24" name="FilterValue" align="Left Bottom HStretch">
+                <UserString key="HStretch" value="true"/>
+                <Property key="ModeDrop" value="false"/>
+            </Widget>
+            
+        </Widget>
             <!-- Spell deletion button -->
             <Widget type="AutoSizedButton" skin="MW_Button" align="Right Bottom" position="8 535 0 23" name="DeleteSpellButton">
                 <Property key="Caption" value="#{sDelete}"/>
                 <Property key="NeedKey" value="false"/>
+                <Property key="Visible" value="false"/>
             </Widget>
-        </Widget>
+            
 
         <!-- Search box-->
         <Widget type="EditBox" skin="MW_TextBoxEditWithBorder" position="8 535 268 23" align="Left Bottom HStretch" name="FilterEdit">
             <UserString key="AcceptTab" value="true"/>
+            <Property key="Visible" value="false"/>
         </Widget>
-
+        
     </Widget>
 </MyGUI>

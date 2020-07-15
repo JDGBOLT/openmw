@@ -452,6 +452,16 @@ namespace MWGui
         }
     }
 
+    bool QuickKeysMenu::isAssigned(const MWWorld::Ptr &item) const
+    {
+        if (item.isEmpty())
+            return false;
+        for (const keyData& quickKey : mKey)
+            if (quickKey.id == item.getCellRef().getRefId())
+                return true; 
+        return false; 
+    }
+
     // ---------------------------------------------------------------------------------------------------------
 
     QuickKeysMenuAssign::QuickKeysMenuAssign (QuickKeysMenu* parent)
@@ -628,6 +638,8 @@ namespace MWGui
         WindowModal::onOpen();
 
         mMagicList->setModel(new SpellModel(MWMechanics::getPlayer()));
+        mMagicList->getModel()->setCategory(SpellModel::Category_Simple);
+        mMagicList->update();
         mMagicList->resetScrollbars();
     }
 

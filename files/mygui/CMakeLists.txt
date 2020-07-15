@@ -61,6 +61,7 @@ set(MYGUI_FILES
     openmw_text_input.layout
     openmw_text.skin.xml
     openmw_tooltips.layout
+    openmw_quickloot.layout
     openmw_trade_window.layout
     openmw_spell_buying_window.layout
     openmw_windows.skin.xml

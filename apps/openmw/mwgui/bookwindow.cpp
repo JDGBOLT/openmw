@@ -1,9 +1,27 @@
 #include "bookwindow.hpp"
 
+#include <array>
+
+#include <osg/NodeVisitor>
+#include <osg/Image>
+
 #include <MyGUI_TextBox.h>
 #include <MyGUI_InputManager.h>
 
 #include <components/esm/loadbook.hpp>
+#include <components/vfs/manager.hpp>
+#include <components/settings/settings.hpp>
+#include <components/resource/resourcemanager.hpp>
+#include <components/resource/scenemanager.hpp>
+#include <components/resource/imagemanager.hpp>
+#include <components/resource/niffilemanager.hpp>
+
+#include <components/misc/resourcehelpers.hpp>
+
+#include <components/nif/base.hpp>
+#include <components/nif/property.hpp>
+#include <components/nif/niffile.hpp>
+#include <components/nif/controlled.hpp>
 
 #include "../mwbase/environment.hpp"
 #include "../mwbase/world.hpp"
@@ -19,11 +37,12 @@
 namespace MWGui
 {
 
-    BookWindow::BookWindow ()
+    BookWindow::BookWindow (Resource::ResourceSystem* resourceSystem)
         : BookWindowBase("openmw_book.layout")
         , mCurrentPage(0)
         , mTakeButtonShow(true)
         , mTakeButtonAllowed(true)
+        , mResourceSystem(resourceSystem)
     {
         getWidget(mCloseButton, "CloseButton");
         mCloseButton->eventMouseButtonClick += MyGUI::newDelegate(this, &BookWindow::onCloseButtonClicked);
@@ -42,6 +61,9 @@ namespace MWGui
 
         getWidget(mLeftPage, "LeftPage");
         getWidget(mRightPage, "RightPage");
+        
+        getWidget(mBookJacket, "BookJacket");
+        getWidget(mJImage, "JImage");
 
         adjustButton("CloseButton");
         adjustButton("TakeButton");
@@ -96,6 +118,63 @@ namespace MWGui
         Formatting::BookFormatter formatter;
         mPages = formatter.markupToWidget(mLeftPage, ref->mBase->mText);
         formatter.markupToWidget(mRightPage, ref->mBase->mText);
+
+        static const std::string defaultTex = "textures\\tx_menubook.dds";
+        mBookJacket->setImageTexture(defaultTex);
+
+        bool bookcovers = Settings::Manager::getBool ("enable bookcovers", "MorroUI");
+        
+        if (bookcovers)
+        {
+            mJImage->setImageTexture("textures\\ui\\book_overlay.dds");
+    
+            auto sceneMgr = mResourceSystem->getSceneManager();
+            auto bookPtr = mBook.get<ESM::Book>();
+
+            auto model = book.getClass().getModel(book);
+
+            auto nifPtr = mResourceSystem->getNifFileManager()->get(model);
+
+            static const std::array<std::string,6> blacklist = {"_p.","_page.","_pages.", "_g.", "_wax", "_edge"};
+
+            for (size_t i = 0; i < nifPtr->numRecords(); i++)
+            {
+                auto record = nifPtr->getRecord(i);
+                if (record->recType == Nif::RC_NiTexturingProperty)
+                {
+                    auto texprop = static_cast<const Nif::NiTexturingProperty*>(record);
+                    if (texprop)
+                    {   
+                        int base = Nif::NiTexturingProperty::BaseTexture;
+                        auto tex = texprop->textures[base];
+                        if (tex.inUse)
+                        {
+                            const Nif::NiTexturingProperty::Texture& tex = texprop->textures[base];
+                            if (!tex.texture.empty())
+                            {
+                                bool falsePositive = false;
+                                std::string filepath = Misc::ResourceHelpers::correctResourcePath("textures",tex.texture->filename,mResourceSystem->getVFS());
+
+                                for (const std::string& item : blacklist)
+                                    if (filepath.find(item) != std::string::npos)
+                                    {
+                                        falsePositive = true;
+                                        break;
+                                    }
+                                if (falsePositive) continue;
+
+                               mResourceSystem->getVFS()->normalizeFilename(filepath);
+                               //std::cout << "Using texture: " << filepath << std::endl;
+                               mBookJacket->setImageTexture(filepath);
+                               break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else 
+            mJImage->setImageTexture(defaultTex);
 
         updatePages();
 

@@ -55,7 +55,15 @@ CompanionWindow::CompanionWindow(DragAndDrop *dragAndDrop, MessageBoxManager* ma
 
     mCloseButton->eventMouseButtonClick += MyGUI::newDelegate(this, &CompanionWindow::onCloseButtonClicked);
 
+    mItemView->getHeader()->eventItemClicked += MyGUI::newDelegate(this, &CompanionWindow::onHeaderClicked);
+
     setCoord(200,0,600,300);
+}
+
+void CompanionWindow::onHeaderClicked(int sort)
+{
+    mSortModel->toggleSort(sort);
+    mItemView->update();
 }
 
 void CompanionWindow::onItemSelected(int index)

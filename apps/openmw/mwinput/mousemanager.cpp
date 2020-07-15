@@ -12,6 +12,7 @@
 #include "../mwbase/inputmanager.hpp"
 #include "../mwbase/windowmanager.hpp"
 #include "../mwbase/world.hpp"
+#include "../mwgui/quickloot.hpp"
 
 #include "../mwworld/player.hpp"
 
@@ -100,6 +101,10 @@ namespace MWInput
             rot[0] = -y;
             rot[1] = 0.0f;
             rot[2] = -x;
+
+            // send a "fake" mouse wheel event to our quick loot menu, not sure how to do this properly 
+            if (arg.zrel && MWBase::Environment::get().getWindowManager()->getQuickLoot()->isVisible())
+                MWBase::Environment::get().getWindowManager()->notifyMouseWheel(arg.zrel);
 
             // Only actually turn player when we're not in vanity mode
             if (!MWBase::Environment::get().getWorld()->vanityRotateCamera(rot) && input->getControlSwitch("playerlooking"))

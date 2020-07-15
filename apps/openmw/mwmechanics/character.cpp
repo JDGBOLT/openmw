@@ -40,6 +40,8 @@
 #include "../mwworld/esmstore.hpp"
 #include "../mwworld/player.hpp"
 
+#include "../mwgui/quickloot.hpp"
+
 #include "aicombataction.hpp"
 #include "movement.hpp"
 #include "npcstats.hpp"
@@ -47,6 +49,7 @@
 #include "security.hpp"
 #include "actorutil.hpp"
 #include "spellcasting.hpp"
+
 
 namespace
 {
@@ -1074,11 +1077,16 @@ void CharacterController::handleTextKey(const std::string &groupname, NifOsg::Te
         MWBase::Environment::get().getWorld()->castSpell(mPtr, mCastingManualSpell);
         mCastingManualSpell = false;
     }
-
     else if (groupname == "shield" && evt.compare(off, len, "block hit") == 0)
         mPtr.getClass().block(mPtr);
     else if (groupname == "containeropen" && evt.compare(off, len, "loot") == 0)
-        MWBase::Environment::get().getWindowManager()->pushGuiMode(MWGui::GM_Container, mPtr);
+    {  
+        if (!MWBase::Environment::get().getWindowManager()->getQuickLoot()->isPlaying())
+            MWBase::Environment::get().getWindowManager()->pushGuiMode(MWGui::GM_Container, mPtr);
+        else 
+            MWBase::Environment::get().getWindowManager()->getQuickLoot()->setPlaying(false);
+    }
+
 }
 
 void CharacterController::updatePtr(const MWWorld::Ptr &ptr)

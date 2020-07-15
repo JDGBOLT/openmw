@@ -42,6 +42,9 @@ namespace MWGui
             MyGUI::Button* mControllerSwitch;
             bool mKeyboardMode; //if true, setting up the keyboard. Otherwise, it's controller
 
+            // morroui 
+            MyGUI::ScrollView* mMUIControls;
+
             void onTabChanged(MyGUI::TabControl* _sender, size_t index);
             void onOkButtonClicked(MyGUI::Widget* _sender);
             void onTextureFilteringChanged(MyGUI::ComboBox* _sender, size_t pos);
@@ -69,7 +72,7 @@ namespace MWGui
             void configureWidgets(MyGUI::Widget* widget);
             void updateSliderLabel(MyGUI::ScrollBar* scroller, const std::string& value);
 
-            void layoutControlsBox();
+            void layoutControlsBox(MyGUI::ScrollView* target);
         
         private:
             void resetScrollbars();

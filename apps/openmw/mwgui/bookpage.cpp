@@ -279,7 +279,7 @@ struct TypesetBookImpl::Typesetter : BookTypesetter
         MyGUI::IFont* font = MyGUI::FontManager::getInstance().getByName(fullFontName);
         if (!font)
             throw std::runtime_error(std::string("can't find font ") + fullFontName);
-
+    
         StyleImpl & style = *mBook->mStyles.insert (mBook->mStyles.end (), StyleImpl ());
         style.mFont = font;
         style.mHotColour = fontColour;
@@ -502,7 +502,7 @@ struct TypesetBookImpl::Typesetter : BookTypesetter
 
             while (!stream.eof () && !ucsLineBreak (stream.peek ()) && ucsBreakingSpace (stream.peek ()))
             {
-                MWGui::GlyphInfo info = GlyphInfo(style->mFont, stream.peek());
+                MWGui::GlyphInfo info = GlyphInfo(style->mFont, stream.peek(), mFontHeight);
                 if (info.charFound)
                     space_width += static_cast<int>(info.advance + info.bearingX);
                 stream.consume ();
@@ -512,7 +512,7 @@ struct TypesetBookImpl::Typesetter : BookTypesetter
 
             while (!stream.eof () && !ucsLineBreak (stream.peek ()) && !ucsBreakingSpace (stream.peek ()))
             {
-                MWGui::GlyphInfo info = GlyphInfo(style->mFont, stream.peek());
+                MWGui::GlyphInfo info = GlyphInfo(style->mFont, stream.peek(), mFontHeight);
                 if (info.charFound)
                     word_width += static_cast<int>(info.advance + info.bearingX);
                 stream.consume ();
@@ -534,8 +534,8 @@ struct TypesetBookImpl::Typesetter : BookTypesetter
     {
         if (mPartialWhitespace.empty() && mPartialWord.empty())
             return;
-
-        int fontHeight = MWBase::Environment::get().getWindowManager()->getFontHeight();
+        
+        int fontHeight =  mFontHeight;
         int space_width = 0;
         int word_width  = 0;
 
@@ -732,13 +732,15 @@ namespace
         MyGUI::Vertex* mVertices;
         RenderXform mRenderXform;
         MyGUI::VertexColourType mVertexColourType;
+        int mFontHeight;
 
         GlyphStream (MyGUI::IFont* font, float left, float top, float Z,
-                      MyGUI::Vertex* vertices, RenderXform const & renderXform) :
+                      MyGUI::Vertex* vertices, RenderXform const & renderXform, int fontHeight) :
             mZ(Z),
             mC(0), mFont (font), mOrigin (left, top),
             mVertices (vertices),
-            mRenderXform (renderXform)
+            mRenderXform (renderXform),
+            mFontHeight(fontHeight)
         {
             assert(font != nullptr);
             mVertexColourType = MyGUI::RenderManager::getInstance().getVertexFormat();
@@ -761,7 +763,7 @@ namespace
 
         void emitGlyph (wchar_t ch)
         {
-            MWGui::GlyphInfo info = GlyphInfo(mFont, ch);
+            MWGui::GlyphInfo info = GlyphInfo(mFont, ch, mFontHeight);
 
             if (!info.charFound)
                 return;
@@ -783,7 +785,7 @@ namespace
 
         void emitSpace (wchar_t ch)
         {
-            MWGui::GlyphInfo info = GlyphInfo(mFont, ch);
+            MWGui::GlyphInfo info = GlyphInfo(mFont, ch, mFontHeight);
 
             if (info.charFound)
                 mCursor.left += static_cast<int>(info.bearingX + info.advance);
@@ -901,6 +903,7 @@ public:
 
     int mViewTop;
     int mViewBottom;
+    int mFontHeight;
 
     Style* mFocusItem;
     bool mItemActive;
@@ -1218,7 +1221,7 @@ public:
         RenderXform renderXform (mCroppedParent, textFormat.mRenderItem->getRenderTarget()->getInfo());
 
         GlyphStream glyphStream(textFormat.mFont, static_cast<float>(mCoord.left), static_cast<float>(mCoord.top - mViewTop),
-                                  -1 /*mNode->getNodeDepth()*/, vertices, renderXform);
+                                  -1 /*mNode->getNodeDepth()*/, vertices, renderXform, mFontHeight);
 
         int visit_top    = (std::max) (mViewTop,    mViewTop + int (renderXform.clipTop   ));
         int visit_bottom = (std::min) (mViewBottom, mViewTop + int (renderXform.clipBottom));
@@ -1273,16 +1276,19 @@ public:
 
     void showPage (TypesetBook::Ptr book, size_t page) final
     {
+        mPageDisplay->mFontHeight = mFontHeight;
         mPageDisplay->showPage (book, page);
     }
 
     void adviseLinkClicked (std::function <void (InteractiveId)> linkClicked) final
     {
+        mPageDisplay->mFontHeight = mFontHeight;
         mPageDisplay->mLinkClicked = linkClicked;
     }
 
     void unadviseLinkClicked () final
     {
+        mPageDisplay->mFontHeight = mFontHeight;
         mPageDisplay->mLinkClicked = std::function <void (InteractiveId)> ();
     }
 

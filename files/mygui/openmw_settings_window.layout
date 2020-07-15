@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <MyGUI type="Layout" version="3.2.0">
     <Widget type="Window" skin="MW_Window" position="0 0 400 485" layer="Windows" name="_Main">
-        <Property key="MinSize" value="430 446"/>
+        <Property key="MinSize" value="530 546"/>
         <Widget type="TabControl" skin="TabControl" position="8 8 368 405" align="Stretch" name="SettingsTab">
             <Property key="ButtonAutoWidth" value="true"/>
             <Widget type="TabItem" skin="" position="4 32 360 358">
@@ -455,7 +455,6 @@
                                 </Widget>
                             </Widget>
                         </Widget>
-
                     </Widget>
                     <!--
                     <Widget type="TabItem" skin="" position="0 28 352 268">
@@ -539,6 +538,104 @@
                     -->
                 </Widget>
             </Widget>
+
+            <!-- MorroUI extension settings -->
+
+            <Widget type="TabItem" skin="" position="4 32 360 308">
+                <Property key="Caption" value="  MorroUI  "/>
+
+                <!-- QuickLoot options -->
+                <Widget type="HBox" skin="" position="4 4 260 24">
+                    <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top">
+                        <UserString key="SettingCategory" value="MorroUI"/>
+                        <UserString key="SettingName" value="enable quickloot"/>
+                        <UserString key="SettingType" value="CheckButton"/>
+                    </Widget>
+                    <Widget type="AutoSizedTextBox" skin="SandText" position="28 4 80 16" align="Left Top">
+                        <Property key="Caption" value="Enable QuickLoot"/>
+                    </Widget>
+                </Widget>
+                <Widget type="Widget" skin="MW_Box" position="4 32 352 100" align="Top Left HStretch">
+                    <Widget type="ScrollView" skin="MW_ScrollView" position="4 4 344 100" align="Stretch" name="MUIControls">
+                        <Property key="CanvasAlign" value="Left Top"/>
+                    </Widget>
+                </Widget>
+
+                <!-- Tab Focus -->
+                <Widget type="HBox" skin="" position="4 140 260 24">
+                    <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top">
+                        <UserString key="SettingCategory" value="MorroUI"/>
+                        <UserString key="SettingName" value="disable tab focus"/>
+                        <UserString key="SettingType" value="CheckButton"/>
+                    </Widget>
+                    <Widget type="AutoSizedTextBox" skin="SandText" position="28 4 80 16" align="Left Top">
+                        <Property key="Caption" value="Disable Tab Focus"/>
+                    </Widget>
+                </Widget>
+
+                <!-- Left Click Activates -->
+                <Widget type="HBox" skin="" position="4 170 260 24">
+                    <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top">
+                        <UserString key="SettingCategory" value="MorroUI"/>
+                        <UserString key="SettingName" value="leftclick activates"/>
+                        <UserString key="SettingType" value="CheckButton"/>
+                    </Widget>
+                    <Widget type="AutoSizedTextBox" skin="SandText" position="28 4 80 16" align="Left Top">
+                        <Property key="Caption" value="Left Click Activates"/>
+                    </Widget>
+                </Widget>
+
+                <!-- Book Covers -->
+                <Widget type="HBox" skin="" position="4 200 260 24">
+                    <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top">
+                        <UserString key="SettingCategory" value="MorroUI"/>
+                        <UserString key="SettingName" value="enable bookcovers"/>
+                        <UserString key="SettingType" value="CheckButton"/>
+                    </Widget>
+                    <Widget type="AutoSizedTextBox" skin="SandText" position="28 4 80 16" align="Left Top">
+                        <Property key="Caption" value="Dynamic Book Covers"/>
+                    </Widget>
+                </Widget>
+
+                <!-- Book Font Size -->
+                <Widget type="TextBox" skin="SandText" position="4 240 352 16" align="Left Top">
+                    <Property key="Caption" value="Book Font Size"/>
+                    <Property key="TextAlign" value="Left"/>
+                </Widget>
+                <Widget type="ScrollBar" skin="MW_HScroll" position="4 264 352 14" align="Left Top HStretch">
+                        <Property key="Range" value="36"/>
+                        <Property key="Page" value="1"/>
+                        <UserString key="SettingMin" value="4"/>
+                        <UserString key="SettingMax" value="34"/>
+                        <UserString key="SettingType" value="Slider"/>
+                        <UserString key="SettingCategory" value="MorroUI"/>
+                        <UserString key="SettingName" value="book font size"/>
+                        <UserString key="SettingValueType" value="Integer"/>
+                </Widget>
+                <Widget type="TextBox" skin="SandText" position="4 284 352 16" align="Left Top">
+                        <Property key="Caption" value="Tiny"/>
+                        <Property key="TextAlign" value="Left"/>
+                </Widget>
+                <Widget type="TextBox" skin="SandText" position="4 284 352 16" align="Right Top">
+                        <Property key="Caption" value="Huge"/>
+                        <Property key="TextAlign" value="Right"/>
+                </Widget>
+
+                <!-- Enchant Glow -->
+                <Widget type="HBox" skin="" position="4 300 260 24">
+                    <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" align="Left Top">
+                        <UserString key="SettingCategory" value="MorroUI"/>
+                        <UserString key="SettingName" value="disable glow"/>
+                        <UserString key="SettingType" value="CheckButton"/>
+                    </Widget>
+                    <Widget type="AutoSizedTextBox" skin="SandText" position="28 4 80 16" align="Left Top">
+                        <Property key="Caption" value="Disable Enchant Glow"/>
+                    </Widget>
+                </Widget>
+
+            </Widget>
+
+
         </Widget>
         <Widget type="AutoSizedButton" skin="MW_Button" position="320 420 56 24" align="Right Bottom" name="OkButton">
             <Property key="ExpandDirection" value="Left"/>

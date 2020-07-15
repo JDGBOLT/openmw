@@ -5,7 +5,7 @@
   <Widget type="Window" skin="" layer="JournalBooks" align="Left|Top" position="0 0 565 390" name="_Main">
     <!-- pages -->
     <Widget type="ImageBox" skin="ImageBox" position="-70 0 705 390" align="Top|Right" name="JImage">
-    <Property key="ImageTexture" value="textures\tx_menubook.dds"/>
+      <Property key="ImageTexture" value="textures\tx_menubook.dds"/>
     <Widget type="Widget" position="70 0 565 390" align="Top|Right">
 
 
@@ -25,13 +25,15 @@
       </Widget>
 
       <Widget type="TextBox" skin="NormalText" position="150 350 32 16" name="PageOneNum">
-        <Property key="FontName" value="Journalbook Magic Cards"/>
-        <Property key="TextColour" value="0 0 0"/>
+        <Property key="FontName" value="Magic Cards"/>
+        <Property key="FontHeight" value="12"/>
+        <Property key="TextColour" value="0.1 0.1 0.1"/>
       </Widget>
 
       <Widget type="TextBox" skin="NormalText" position="410 350 32 16" name="PageTwoNum">
-        <Property key="FontName" value="Journalbook Magic Cards"/>
-        <Property key="TextColour" value="0 0 0"/>
+        <Property key="FontName" value="Magic Cards"/>
+        <Property key="FontHeight" value="12"/>
+        <Property key="TextColour" value="0.1 0.1 0.1"/>
       </Widget>
 
 

@@ -30,7 +30,7 @@ namespace MWGui
 {
     class ContainerWindow : public WindowBase, public ReferenceInterface
     {
-    public:
+    public:        
         ContainerWindow(DragAndDrop* dragAndDrop);
 
         void setPtr(const MWWorld::Ptr& container);
@@ -53,6 +53,8 @@ namespace MWGui
         MyGUI::Button* mTakeButton;
         MyGUI::Button* mCloseButton;
 
+        void onTransferItem(MyGUI::Widget* sender, int count);
+        void onHeaderClicked(int sort);
         void onItemSelected(int index);
         void onBackgroundSelected();
         void dragItem(MyGUI::Widget* sender, int count);

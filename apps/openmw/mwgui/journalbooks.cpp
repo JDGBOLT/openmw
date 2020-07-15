@@ -166,6 +166,8 @@ book JournalBooks::createEmptyJournalBook ()
     BookTypesetter::Style* header = typesetter->createStyle ("", MyGUI::Colour (0.60f, 0.00f, 0.00f));
     BookTypesetter::Style* body   = typesetter->createStyle ("", MyGUI::Colour::Black);
 
+    typesetter->mFontHeight = Settings::Manager::getInt("book font size", "MorroUI");
+
     typesetter->write (header, to_utf8_span ("You have no journal entries!"));
     typesetter->lineBreak ();
     typesetter->write (body, to_utf8_span ("You should have gone though the starting quest and got an initial quest."));
@@ -180,6 +182,8 @@ book JournalBooks::createJournalBook ()
     BookTypesetter::Style* header = typesetter->createStyle ("", MyGUI::Colour (0.60f, 0.00f, 0.00f));
     BookTypesetter::Style* body   = typesetter->createStyle ("", MyGUI::Colour::Black);
 
+    typesetter->mFontHeight = Settings::Manager::getInt("book font size", "MorroUI");
+
     mModel->visitJournalEntries ("", AddJournalEntry (typesetter, body, header, true));
 
     return typesetter->complete ();
@@ -191,6 +195,8 @@ book JournalBooks::createTopicBook (uintptr_t topicId)
 
     BookTypesetter::Style* header = typesetter->createStyle ("", MyGUI::Colour (0.60f, 0.00f, 0.00f));
     BookTypesetter::Style* body   = typesetter->createStyle ("", MyGUI::Colour::Black);
+
+    typesetter->mFontHeight = Settings::Manager::getInt("book font size", "MorroUI");
 
     mModel->visitTopicName (topicId, AddTopicName (typesetter, header));
 
@@ -208,6 +214,8 @@ book JournalBooks::createQuestBook (const std::string& questName)
     BookTypesetter::Style* header = typesetter->createStyle ("", MyGUI::Colour (0.60f, 0.00f, 0.00f));
     BookTypesetter::Style* body   = typesetter->createStyle ("", MyGUI::Colour::Black);
 
+    typesetter->mFontHeight = Settings::Manager::getInt("book font size", "MorroUI");
+
     AddQuestName addName (typesetter, header);
     addName(to_utf8_span(questName.c_str()));
 
@@ -221,6 +229,7 @@ book JournalBooks::createTopicIndexBook ()
     bool isRussian = (mEncoding == ToUTF8::WINDOWS_1251);
 
     BookTypesetter::Ptr typesetter = isRussian ? createCyrillicJournalIndex() : createLatinJournalIndex();
+    typesetter->mFontHeight = Settings::Manager::getInt("book font size", "MorroUI");
 
     return typesetter->complete ();
 }
@@ -230,7 +239,8 @@ BookTypesetter::Ptr JournalBooks::createLatinJournalIndex ()
     BookTypesetter::Ptr typesetter = BookTypesetter::create (92, 260);
 
     typesetter->setSectionAlignment (BookTypesetter::AlignCenter);
-
+    typesetter->mFontHeight = Settings::Manager::getInt("book font size", "MorroUI");
+    
     // Latin journal index always has two columns for now.
     mIndexPagesCount = 2;
 

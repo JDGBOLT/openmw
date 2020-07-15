@@ -15,9 +15,8 @@ namespace MWGui
 
     const char* SpellView::sSpellModelIndex = "SpellModelIndex";
 
-    SpellView::LineInfo::LineInfo(MyGUI::Widget* leftWidget, MyGUI::Widget* rightWidget, SpellModel::ModelIndex spellIndex)
-        : mLeftWidget(leftWidget)
-        , mRightWidget(rightWidget)
+    SpellView::LineInfo::LineInfo(SpellListWidget* widget, SpellModel::ModelIndex spellIndex)
+        : mItem(widget)
         , mSpellIndex(spellIndex)
     {
 
@@ -27,6 +26,7 @@ namespace MWGui
         : mScrollView(nullptr)
         , mShowCostColumn(true)
         , mHighlightSelected(true)
+        , mHeader(nullptr)
     {
     }
 
@@ -37,6 +37,9 @@ namespace MWGui
         assignWidget(mScrollView, "ScrollView");
         if (mScrollView == nullptr)
             throw std::runtime_error("Item view needs a scroll view");
+        assignWidget(mHeader, "Header");
+        if (mHeader == nullptr)
+            throw std::runtime_error("Item view needs a header");
 
         mScrollView->setCanvasAlign(MyGUI::Align::Left | MyGUI::Align::Top);
     }
@@ -91,49 +94,28 @@ namespace MWGui
         while (mScrollView->getChildCount())
             MyGUI::Gui::getInstance().destroyWidget(mScrollView->getChildAt(0));
 
+        while (mHeader->getChildCount())
+            MyGUI::Gui::getInstance().destroyWidget(mHeader->getChildAt(0));
+
+        int category = mModel->getCategory();
+
+        if (category == MWGui::SpellModel::Category_All)
+            mHeader->changeWidgetSkin("MW_SpellListHeader_All"); 
+        else if (category == MWGui::SpellModel::Category_Simple)
+            mHeader->changeWidgetSkin("MW_SpellListHeader_Simple"); 
+        else 
+            mHeader->changeWidgetSkin("MW_SpellListHeader"); 
+
         for (SpellModel::ModelIndex i = 0; i<int(mModel->getItemCount()); ++i)
         {
             const Spell& spell = mModel->getItem(i);
-            if (curType != spell.mType)
-            {
-                if (spell.mType == Spell::Type_Power)
-                    addGroup("#{sPowers}", "");
-                else if (spell.mType == Spell::Type_Spell)
-                    addGroup("#{sSpells}", mShowCostColumn ? "#{sCostChance}" : "");
-                else
-                    addGroup("#{sMagicItem}", mShowCostColumn ? "#{sCostCharge}" : "");
-                curType = spell.mType;
-            }
 
-            const std::string skin = spell.mActive ? "SandTextButton" : "SpellTextUnequipped";
-            const std::string captionSuffix = MWGui::ToolTips::getCountString(spell.mCount);
+            SpellListWidget* spellWidget = mScrollView->createWidget<SpellListWidget>("MW_SpellList",
+                MyGUI::IntCoord(0,0,mScrollView->getWidth(), 35), MyGUI::Align::HStretch | MyGUI::Align::Top);
 
-            Gui::SharedStateButton* t = mScrollView->createWidget<Gui::SharedStateButton>(skin,
-                MyGUI::IntCoord(0, 0, 0, spellHeight), MyGUI::Align::Left | MyGUI::Align::Top);
-            t->setNeedKeyFocus(true);
-            t->setCaption(spell.mName + captionSuffix);
-            t->setTextAlign(MyGUI::Align::Left);
-            adjustSpellWidget(spell, i, t);
-
-            if (!spell.mCostColumn.empty() && mShowCostColumn)
-            {
-                Gui::SharedStateButton* costChance = mScrollView->createWidget<Gui::SharedStateButton>(skin,
-                    MyGUI::IntCoord(0, 0, 0, spellHeight), MyGUI::Align::Left | MyGUI::Align::Top);
-                costChance->setCaption(spell.mCostColumn);
-                costChance->setTextAlign(MyGUI::Align::Right);
-                adjustSpellWidget(spell, i, costChance);
-
-                Gui::ButtonGroup group;
-                group.push_back(t);
-                group.push_back(costChance);
-                Gui::SharedStateButton::createButtonGroup(group);
-
-                mLines.push_back(LineInfo(t, costChance, i));
-            }
-            else
-                mLines.push_back(LineInfo(t, (MyGUI::Widget*)nullptr, i));
-
-            t->setStateSelected(spell.mSelected);
+            spellWidget->setSpell(spell, category);
+            mLines.push_back(LineInfo(spellWidget,i));
+            adjustSpellWidget(spell,i,spellWidget);
         }
 
         layoutWidgets();
@@ -142,83 +124,33 @@ namespace MWGui
     void SpellView::incrementalUpdate()
     {
         if (!mModel.get())
-        {
             return;
-        }
-
-        mModel->update();
-        bool fullUpdateRequired = false;
-        SpellModel::ModelIndex maxSpellIndexFound = -1;
-        for (LineInfo& line : mLines)
-        {
-            // only update the lines that are "updateable"
-            SpellModel::ModelIndex spellIndex(line.mSpellIndex);
-            if (spellIndex != NoSpellIndex)
-            {
-                Gui::SharedStateButton* nameButton = reinterpret_cast<Gui::SharedStateButton*>(line.mLeftWidget);
-
-                // match model against line
-                // if don't match, then major change has happened, so do a full update
-                if (mModel->getItemCount() <= static_cast<unsigned>(spellIndex))
-                {
-                    fullUpdateRequired = true;
-                    break;
-                }
-
-                // more checking for major change.
-                const Spell& spell = mModel->getItem(spellIndex);
-                const std::string captionSuffix = MWGui::ToolTips::getCountString(spell.mCount);
-                if (nameButton->getCaption() != (spell.mName + captionSuffix))
-                {
-                    fullUpdateRequired = true;
-                    break;
-                }
-                else
-                {
-                    maxSpellIndexFound = spellIndex;
-                    Gui::SharedStateButton* costButton = reinterpret_cast<Gui::SharedStateButton*>(line.mRightWidget);
-                    if ((costButton != nullptr) && (costButton->getCaption() != spell.mCostColumn))
-                    {
-                        costButton->setCaption(spell.mCostColumn);
-                    }
-                }
-            }
-        }
-
-        // special case, look for spells added to model that are beyond last updatable item
-        SpellModel::ModelIndex topSpellIndex = mModel->getItemCount() - 1;
-        if (fullUpdateRequired ||
-            ((0 <= topSpellIndex) && (maxSpellIndexFound < topSpellIndex)))
-        {
-            update();
-        }
+        update();
     }
 
+    ItemListWidgetHeader* SpellView::getHeader()
+    {
+        return mHeader;
+    }
 
     void SpellView::layoutWidgets()
     {
         int height = 0;
         for (LineInfo& line : mLines)
         {
-            height += line.mLeftWidget->getHeight();
+            height += line.mItem->getHeight();
         }
 
         bool scrollVisible = height > mScrollView->getHeight();
-        int width = mScrollView->getWidth() - (scrollVisible ? 18 : 0);
-
+        int rightMargin = (scrollVisible) ? 45 : 10;
+        mHeader->setSize(MyGUI::IntSize(mScrollView->getWidth()-rightMargin,36));
+        
         height = 0;
         for (LineInfo& line : mLines)
         {
-            int lineHeight = line.mLeftWidget->getHeight();
-            line.mLeftWidget->setCoord(4, height, width - 8, lineHeight);
-            if (line.mRightWidget)
-            {
-                line.mRightWidget->setCoord(4, height, width - 8, lineHeight);
-                MyGUI::TextBox* second = line.mRightWidget->castType<MyGUI::TextBox>(false);
-                if (second)
-                    line.mLeftWidget->setSize(width - 8 - second->getTextSize().width, lineHeight);
-            }
-
+            int lineHeight = line.mItem->getHeight();
+            line.mItem->setCoord(MyGUI::IntCoord(
+                0,height, mScrollView->getWidth()-rightMargin, lineHeight));
             height += lineHeight;
         }
 
@@ -227,40 +159,6 @@ namespace MWGui
         mScrollView->setCanvasSize(mScrollView->getWidth(), std::max(mScrollView->getHeight(), height));
         mScrollView->setVisibleVScroll(true);
     }
-
-    void SpellView::addGroup(const std::string &label, const std::string& label2)
-    {
-        if (mScrollView->getChildCount() > 0)
-        {
-            MyGUI::ImageBox* separator = mScrollView->createWidget<MyGUI::ImageBox>("MW_HLine",
-                MyGUI::IntCoord(0, 0, mScrollView->getWidth(), 18),
-                MyGUI::Align::Left | MyGUI::Align::Top);
-            separator->setNeedMouseFocus(false);
-            mLines.push_back(LineInfo(separator, (MyGUI::Widget*)nullptr, NoSpellIndex));
-        }
-
-        MyGUI::TextBox* groupWidget = mScrollView->createWidget<Gui::TextBox>("SandBrightText",
-            MyGUI::IntCoord(0, 0, mScrollView->getWidth(), 24),
-            MyGUI::Align::Left | MyGUI::Align::Top);
-        groupWidget->setCaptionWithReplacing(label);
-        groupWidget->setTextAlign(MyGUI::Align::Left);
-        groupWidget->setNeedMouseFocus(false);
-
-        if (label2 != "")
-        {
-            MyGUI::TextBox* groupWidget2 = mScrollView->createWidget<Gui::TextBox>("SandBrightText",
-                MyGUI::IntCoord(0, 0, mScrollView->getWidth(), 24),
-                MyGUI::Align::Left | MyGUI::Align::Top);
-            groupWidget2->setCaptionWithReplacing(label2);
-            groupWidget2->setTextAlign(MyGUI::Align::Right);
-            groupWidget2->setNeedMouseFocus(false);
-
-            mLines.push_back(LineInfo(groupWidget, groupWidget2, NoSpellIndex));
-        }
-        else
-            mLines.push_back(LineInfo(groupWidget, (MyGUI::Widget*)nullptr, NoSpellIndex));
-    }
-
 
     void SpellView::setSize(const MyGUI::IntSize &_value)
     {
@@ -278,7 +176,7 @@ namespace MWGui
             layoutWidgets();
     }
 
-    void SpellView::adjustSpellWidget(const Spell &spell, SpellModel::ModelIndex index, MyGUI::Widget *widget)
+    void SpellView::adjustSpellWidget(const Spell &spell, SpellModel::ModelIndex index, SpellListWidget *widget)
     {
         if (spell.mType == Spell::Type_EnchantedItem)
         {
@@ -292,10 +190,87 @@ namespace MWGui
         }
 
         widget->setUserString(sSpellModelIndex, MyGUI::utility::toString(index));
-
         widget->eventMouseWheel += MyGUI::newDelegate(this, &SpellView::onMouseWheelMoved);
         widget->eventMouseButtonClick += MyGUI::newDelegate(this, &SpellView::onSpellSelected);
+        widget->setNeedKeyFocus(true);
+        widget->setNeedMouseFocus(true);
+        widget->eventKeyButtonPressed += MyGUI::newDelegate(this, &SpellView::onKeyButtonPressed);
+        widget->eventItemFocused += MyGUI::newDelegate(this, &SpellView::onItemFocused);
     }
+
+    void SpellView::onKeyButtonPressed(MyGUI::Widget *sender, MyGUI::KeyCode key, MyGUI::Char character)
+    {
+        SpellModel::ModelIndex index = getSpellModelIndex(sender);
+
+        if (key == MyGUI::KeyCode::ArrowUp || key == MyGUI::KeyCode::ArrowDown)
+        {
+            if (mLines.size() > 0)
+            {
+                int count = mLines.size();
+                for (auto i = 0; i < count; i++)
+                    mLines[i].mItem->setStateFocused(false);
+
+                if (index < 0 || index > count - 1)
+                    index = 0;
+
+                if (key == MyGUI::KeyCode::ArrowUp)
+                {
+                    if (index < 2)
+                        index = 0;
+                    else 
+                        index -= 1;
+                }
+                else
+                {
+                    if (index >= count - 2)
+                        index = count - 1;
+                    else 
+                        index += 1;
+                }
+
+                SpellListWidget* w = mLines[index].mItem;
+                w->setStateFocused(true);
+                onItemFocused(w);
+
+                // make sure we adjust for scrolling, this is just an approximation 
+                if (mScrollView->isVisibleVScroll())
+                {
+                    // how many items the scrollview can show 
+                    int maxItems = mScrollView->getHeight() / w->getHeight();
+                    int minIndex = std::ceil((-mScrollView->getViewOffset().top / static_cast<float>(w->getHeight())));
+                    int maxIndex = minIndex + maxItems - 1;
+
+                    // this is *not* a scroll-to, it assumes the item is already in view 
+                    if (index > maxIndex)
+                    {
+                        mScrollView->setViewOffset(MyGUI::IntPoint(0,static_cast<int>(mScrollView->getViewOffset().top - w->getHeight())));
+                    }
+                    else if (index < minIndex)
+                    {
+                        mScrollView->setViewOffset(MyGUI::IntPoint(0,static_cast<int>(mScrollView->getViewOffset().top + w->getHeight())));
+                    }
+                }
+            }
+        }
+        else if (key == MyGUI::KeyCode::Return)
+        {
+            dynamic_cast<SpellListWidget*>(sender)->setStateSelected(true);
+            eventSpellClicked(index);
+        }
+    }
+
+    void SpellView::onItemFocused(SpellListWidget* item)
+    {
+        return;
+        for (auto line : mLines)
+        {
+            if (line.mItem != item)
+                line.mItem->setStateFocused(false);
+        }
+        MWBase::Environment::get().getWindowManager()->setKeyFocusWidget(item);
+        onSpellSelected(item);
+    }
+
 
     SpellModel::ModelIndex SpellView::getSpellModelIndex(MyGUI::Widget* widget)
     {
@@ -304,6 +279,7 @@ namespace MWGui
 
     void SpellView::onSpellSelected(MyGUI::Widget* _sender)
     {
+        dynamic_cast<SpellListWidget*>(_sender)->setStateSelected(true);
         eventSpellClicked(getSpellModelIndex(_sender));
     }
 

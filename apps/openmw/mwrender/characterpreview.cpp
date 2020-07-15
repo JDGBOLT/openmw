@@ -13,6 +13,7 @@
 #include <osgUtil/IntersectionVisitor>
 #include <osgUtil/LineSegmentIntersector>
 
+#include <components/resource/scenemanager.hpp>
 #include <components/debug/debuglog.hpp>
 #include <components/fallback/fallback.hpp>
 #include <components/sceneutil/lightmanager.hpp>
@@ -25,6 +26,8 @@
 
 #include "../mwmechanics/actorutil.hpp"
 #include "../mwmechanics/weapontype.hpp"
+
+#include "../mwbase/mechanicsmanager.hpp"
 
 #include "npcanimation.hpp"
 #include "vismask.hpp"
@@ -165,7 +168,7 @@ namespace MWRender
         stateset->setAttributeAndModes(fog, osg::StateAttribute::OFF|osg::StateAttribute::OVERRIDE);
 
         osg::ref_ptr<osg::LightModel> lightmodel = new osg::LightModel;
-        lightmodel->setAmbientIntensity(osg::Vec4(0.0, 0.0, 0.0, 1.0));
+        lightmodel->setAmbientIntensity(osg::Vec4(0.3, 0.3, 0.3, 1.0));
         stateset->setAttributeAndModes(lightmodel, osg::StateAttribute::ON);
 
         osg::ref_ptr<osg::Light> light = new osg::Light;
@@ -261,9 +264,47 @@ namespace MWRender
 
     // --------------------------------------------------------------------------------------------------
 
+   class UpdateCameraCallback : public osg::NodeCallback
+    {
+    public:
+        UpdateCameraCallback(osg::ref_ptr<const osg::Node> nodeToFollow, const osg::Vec3& posOffset, const osg::Vec3& lookAtOffset)
+            : mNodeToFollow(nodeToFollow)
+            , mPosOffset(posOffset)
+            , mLookAtOffset(lookAtOffset)
+        {
+        }
+
+        virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+        {
+            osg::Camera* cam = static_cast<osg::Camera*>(node);
+
+            // Update keyframe controllers in the scene graph first...
+            traverse(node, nv);
+
+            // Now update camera utilizing the updated head position
+            osg::NodePathList nodepaths = mNodeToFollow->getParentalNodePaths();
+            if (nodepaths.empty())
+                return;
+            osg::Matrix worldMat = osg::computeLocalToWorld(nodepaths[0]);
+            osg::Vec3 headOffset = worldMat.getTrans();
+
+            cam->setViewMatrixAsLookAt(headOffset + mPosOffset, headOffset + mLookAtOffset, osg::Vec3(0,0,1));
+        }
+
+    private:
+        osg::ref_ptr<const osg::Node> mNodeToFollow;
+        osg::Vec3 mPosOffset;
+        osg::Vec3 mLookAtOffset;
+    };
+
+    // --------------------------------------------------------------------------------------------------
 
     InventoryPreview::InventoryPreview(osg::Group* parent, Resource::ResourceSystem* resourceSystem, const MWWorld::Ptr& character)
         : CharacterPreview(parent, resourceSystem, character, 512, 1024, osg::Vec3f(0, 700, 71), osg::Vec3f(0,0,71))
+    {
+    }
+
+    InventoryPreview::~InventoryPreview()
     {
     }
 
@@ -279,6 +320,44 @@ namespace MWRender
         mCamera->setStateSet(stateset);
 
         redraw();
+    }
+
+    void InventoryPreview::rebuild()
+    {
+        mAnimation = nullptr;
+
+        if (!mCharacter.isEmpty())
+            mAnimation = new NpcAnimation(mCharacter, mNode, mResourceSystem, true,
+                                      (renderHeadOnly() ? NpcAnimation::VM_HeadOnly : NpcAnimation::VM_Normal));
+        
+        
+
+        CharacterPreview::onSetup();
+
+        CharacterPreview::redraw();
+    }
+
+    void InventoryPreview::setItem(const MWWorld::Ptr &item)
+    {
+        mCharacter = nullptr;
+        mItem = item;
+        if (mUpdateCameraCallback)
+            mCamera->removeUpdateCallback(mUpdateCameraCallback);
+
+        auto mesh = mItem.getClass().getModel(mItem);
+        auto node = mResourceSystem->getSceneManager()->getInstance(mesh);
+        if (node)
+        {
+            mNode->removeChildren(0,mNode->getNumChildren());
+            mNode->addChild(node);
+            mNode->setPosition(osg::Vec3d(0,0,0));
+            osg::Vec3f scale = osg::Vec3f(0.f,0.f,0.f);
+            mNode->setAttitude(osg::Quat(osg::DegreesToRadians(0.f), osg::Vec3(1,0,0))
+                                    * osg::Quat(osg::DegreesToRadians(0.f),osg::Vec3(0,0,1)));
+            mUpdateCameraCallback = new UpdateCameraCallback(node, osg::Vec3f(0, 400, 0), osg::Vec3f(0,0,0));
+            mCamera->addUpdateCallback(mUpdateCameraCallback);
+        }
+        rebuild();
     }
 
     void InventoryPreview::update()
@@ -347,7 +426,7 @@ namespace MWRender
 
     int InventoryPreview::getSlotSelected (int posX, int posY)
     {
-        if (!mViewport)
+        if (!mViewport || !mAnimation)
             return -1;
         float projX = (posX / mViewport->width()) * 2 - 1.f;
         float projY = (posY / mViewport->height()) * 2 - 1.f;
@@ -378,7 +457,18 @@ namespace MWRender
 
     void InventoryPreview::updatePtr(const MWWorld::Ptr &ptr)
     {
+        if (mUpdateCameraCallback)
+            mCamera->removeUpdateCallback(mUpdateCameraCallback);
+
+        mPosition = osg::Vec3f(0, 700, 71);
+        mLookAt = osg::Vec3f(0,0, 71);
         mCharacter = MWWorld::Ptr(ptr.getBase(), nullptr);
+        mNode->removeChildren(0,mNode->getNumChildren());
+        mNode->setAttitude(osg::Quat(0.f, osg::Vec3(0,0,1)));
+        mNode->setScale(osg::Vec3f(1.f,1.f,1.f));
+        mNode->setPosition(osg::Vec3d(0.0f,0.0f,4.0f));
+        mCamera->setViewMatrixAsLookAt(mPosition, mLookAt, osg::Vec3f(0,0,1));
+        redraw();
     }
 
     void InventoryPreview::onSetup()
@@ -388,8 +478,21 @@ namespace MWRender
         mCharacter.getClass().adjustScale(mCharacter, scale, true);
 
         mNode->setScale(scale);
-
+        mNode->setPosition(osg::Vec3d(0.0f,0.0f,4.0f));
         mCamera->setViewMatrixAsLookAt(mPosition * scale.z(), mLookAt * scale.z(), osg::Vec3f(0,0,1));
+    }
+
+    void InventoryPreview::setScale(double scale)
+    {
+        mNode->setScale(osg::Vec3d{scale,scale,scale});
+    }
+
+    void InventoryPreview::ryp(double roll, double yaw, double pitch)
+    {
+        //mNode->setAttitude(osg::Quat(roll, osg::Vec3(0,1,0)));
+        mNode->setAttitude(osg::Quat(pitch, osg::Vec3(1,0,0))* osg::Quat(yaw, osg::Vec3(0,0,1))*osg::Quat(roll, osg::Vec3(0,1,0)));
+        //mNode->setAttitude(osg::Quat(yaw, osg::Vec3(0,0,1)));
+        redraw();
     }
 
     // --------------------------------------------------------------------------------------------------
@@ -421,39 +524,6 @@ namespace MWRender
         mBase.mId = "player";
         rebuild();
     }
-
-    class UpdateCameraCallback : public osg::NodeCallback
-    {
-    public:
-        UpdateCameraCallback(osg::ref_ptr<const osg::Node> nodeToFollow, const osg::Vec3& posOffset, const osg::Vec3& lookAtOffset)
-            : mNodeToFollow(nodeToFollow)
-            , mPosOffset(posOffset)
-            , mLookAtOffset(lookAtOffset)
-        {
-        }
-
-        virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
-        {
-            osg::Camera* cam = static_cast<osg::Camera*>(node);
-
-            // Update keyframe controllers in the scene graph first...
-            traverse(node, nv);
-
-            // Now update camera utilizing the updated head position
-            osg::NodePathList nodepaths = mNodeToFollow->getParentalNodePaths();
-            if (nodepaths.empty())
-                return;
-            osg::Matrix worldMat = osg::computeLocalToWorld(nodepaths[0]);
-            osg::Vec3 headOffset = worldMat.getTrans();
-
-            cam->setViewMatrixAsLookAt(headOffset + mPosOffset, headOffset + mLookAtOffset, osg::Vec3(0,0,1));
-        }
-
-    private:
-        osg::ref_ptr<const osg::Node> mNodeToFollow;
-        osg::Vec3 mPosOffset;
-        osg::Vec3 mLookAtOffset;
-    };
 
     void RaceSelectionPreview::onSetup ()
     {
