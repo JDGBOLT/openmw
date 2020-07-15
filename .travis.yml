@@ -1,7 +1,7 @@
 language: cpp
 branches:
   only:
-    - morro_ui
+    - master
     - coverity_scan
     - /openmw-.*$/
 env:
@@ -29,7 +29,7 @@ addons:
     ]
   coverity_scan:  # TODO: currently takes too long, disabled openmw/openmw-cs for now.
     project:
-      name: "glassmancody/openmw"
+      name: "OpenMW/openmw"
       description: "<Your project description here>"
     branch_pattern: coverity_scan
     notification_email: 1122069+psi29a@users.noreply.github.com
@@ -82,9 +82,9 @@ deploy:
  script: ./CI/deploy.osx.sh
  skip_cleanup: true
  on:
-  branch: morro_ui
+  branch: master
   condition: "$TRAVIS_EVENT_TYPE = cron && $TRAVIS_OS_NAME = osx"
-  repo: glassmancody/openmw
+  repo: OpenMW/openmw
 notifications:
   email:
     recipients:
