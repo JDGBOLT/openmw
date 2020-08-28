@@ -71,6 +71,7 @@ namespace MWInput
         mBindingsManager->mouseMoved(arg);
 
         MWBase::InputManager* input = MWBase::Environment::get().getInputManager();
+        MWBase::World* world = MWBase::Environment::get().getWorld();
         input->setJoystickLastUsed(false);
         input->resetIdleTime();
 
@@ -107,17 +108,14 @@ namespace MWInput
                 MWBase::Environment::get().getWindowManager()->notifyMouseWheel(arg.zrel);
 
             // Only actually turn player when we're not in vanity mode
-            if (!MWBase::Environment::get().getWorld()->vanityRotateCamera(rot) && input->getControlSwitch("playerlooking"))
+            if (!world->vanityRotateCamera(rot) && input->getControlSwitch("playerlooking"))
             {
-                MWWorld::Player& player = MWBase::Environment::get().getWorld()->getPlayer();
+                MWWorld::Player& player = world->getPlayer();
                 player.yaw(x);
                 player.pitch(y);
             }
-
-            if (arg.zrel && input->getControlSwitch("playerviewswitch") && input->getControlSwitch("playercontrols")) //Check to make sure you are allowed to zoomout and there is a change
-            {
-                MWBase::Environment::get().getWorld()->changeVanityModeScale(static_cast<float>(arg.zrel));
-            }
+            else if (!input->getControlSwitch("playerlooking"))
+                world->disableDeferredPreviewRotation();
         }
     }
 
@@ -212,17 +210,20 @@ namespace MWInput
             return;
 
         float rot[3];
-        rot[0] = yAxis * dt * 1000.0f * mCameraSensitivity * (mInvertY ? -1 : 1) * mCameraYMultiplier / 256.f;
+        rot[0] = -yAxis * dt * 1000.0f * mCameraSensitivity * (mInvertY ? -1 : 1) * mCameraYMultiplier / 256.f;
         rot[1] = 0.0f;
-        rot[2] = xAxis * dt * 1000.0f * mCameraSensitivity * (mInvertX ? -1 : 1) / 256.f;
+        rot[2] = -xAxis * dt * 1000.0f * mCameraSensitivity * (mInvertX ? -1 : 1) / 256.f;
 
         // Only actually turn player when we're not in vanity mode
-        if (!MWBase::Environment::get().getWorld()->vanityRotateCamera(rot) && MWBase::Environment::get().getInputManager()->getControlSwitch("playercontrols"))
+        bool controls = MWBase::Environment::get().getInputManager()->getControlSwitch("playercontrols");
+        if (!MWBase::Environment::get().getWorld()->vanityRotateCamera(rot) && controls)
         {
             MWWorld::Player& player = MWBase::Environment::get().getWorld()->getPlayer();
-            player.yaw(rot[2]);
-            player.pitch(rot[0]);
+            player.yaw(-rot[2]);
+            player.pitch(-rot[0]);
         }
+        else if (!controls)
+            MWBase::Environment::get().getWorld()->disableDeferredPreviewRotation();
 
         MWBase::Environment::get().getInputManager()->resetIdleTime();
     }
