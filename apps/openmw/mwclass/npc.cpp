@@ -253,13 +253,13 @@ namespace MWClass
         MWMechanics::Movement mMovement;
         MWWorld::InventoryStore mInventoryStore;
 
-        virtual MWWorld::CustomData *clone() const;
+        MWWorld::CustomData *clone() const override;
 
-        virtual NpcCustomData& asNpcCustomData()
+        NpcCustomData& asNpcCustomData() override
         {
             return *this;
         }
-        virtual const NpcCustomData& asNpcCustomData() const
+        const NpcCustomData& asNpcCustomData() const override
         {
             return *this;
         }
@@ -941,7 +941,8 @@ namespace MWClass
         // TODO: This function is called several times per frame for each NPC.
         // It would be better to calculate it only once per frame for each NPC and save the result in CreatureStats.
         const MWMechanics::CreatureStats& stats = getCreatureStats(ptr);
-        if (stats.isParalyzed() || stats.getKnockedDown() || stats.isDead())
+        bool godmode = ptr == MWMechanics::getPlayer() && MWBase::Environment::get().getWorld()->getGodModeState();
+        if ((!godmode && stats.isParalyzed()) || stats.getKnockedDown() || stats.isDead())
             return 0.f;
 
         const MWBase::World *world = MWBase::Environment::get().getWorld();
@@ -990,7 +991,8 @@ namespace MWClass
             return 0.f;
 
         const MWMechanics::CreatureStats& stats = getCreatureStats(ptr);
-        if (stats.isParalyzed() || stats.getKnockedDown() || stats.isDead())
+        bool godmode = ptr == MWMechanics::getPlayer() && MWBase::Environment::get().getWorld()->getGodModeState();
+        if ((!godmode && stats.isParalyzed()) || stats.getKnockedDown() || stats.isDead())
             return 0.f;
 
         const NpcCustomData *npcdata = static_cast<const NpcCustomData*>(ptr.getRefData().getCustomData());
@@ -1397,14 +1399,6 @@ namespace MWClass
                         ptr.getCellRef().getPosition().pos[2]);
             }
         }
-    }
-
-    void Npc::restock(const MWWorld::Ptr& ptr) const
-    {
-        MWWorld::LiveCellRef<ESM::NPC> *ref = ptr.get<ESM::NPC>();
-        const ESM::InventoryList& list = ref->mBase->mInventory;
-        MWWorld::ContainerStore& store = getContainerStore(ptr);
-        store.restock(list, ptr, ptr.getCellRef().getRefId());
     }
 
     int Npc::getBaseFightRating (const MWWorld::ConstPtr& ptr) const

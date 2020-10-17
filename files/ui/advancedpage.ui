@@ -43,6 +43,16 @@
            </property>
           </widget>
          </item>
+         <item row="6" column="0">
+          <widget class="QCheckBox" name="avoidCollisionsCheckBox">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If enabled NPCs apply evasion maneuver to avoid collisions with others.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>NPCs avoid collisions</string>
+           </property>
+          </widget>
+         </item>
          <item row="4" column="0">
           <widget class="QCheckBox" name="enableNavigatorCheckBox">
            <property name="toolTip">
@@ -202,6 +212,36 @@
         </layout>
        </item>
        <item>
+        <layout class="QHBoxLayout" name="horizontalPhysicsThreadsLayout">
+         <item>
+          <widget class="QLabel" name="physicsThreadsLabel">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How many threads will be spawned to compute physics update in the background. A value of 0 means that the update will be performed in the main thread.&lt;/p&gt;&lt;p&gt;A value greater than 1 requires the Bullet library be compiled with multithreading support.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>Background physics threads</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="physicsThreadsSpinBox"/>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_4">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
         <spacer name="verticalSpacer_3">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -230,6 +270,16 @@
            </property>
            <property name="text">
             <string>Turn to movement direction</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QCheckBox" name="smoothMovementCheckBox">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Makes NPCs and player movement more smooth. Recommended to use with "turn to movement direction" enabled.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>Smooth movement</string>
            </property>
           </widget>
          </item>
@@ -283,7 +333,7 @@
            </property>
           </widget>
          </item>
-         <item row="5" column="0">
+         <item row="6" column="0">
           <widget class="QCheckBox" name="animSourcesCheckBox">
            <property name="toolTip">
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Load per-group KF-files and skeleton files from Animations folder&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>

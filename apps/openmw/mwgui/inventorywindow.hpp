@@ -46,12 +46,12 @@ namespace MWGui
 
             InventoryWindow(DragAndDrop* dragAndDrop, osg::Group* parent, Resource::ResourceSystem* resourceSystem);
 
-            virtual void onOpen();
+            void onOpen() override;
 
             /// start trading, disables item drag&drop
             void setTrading(bool trading);
 
-            void onFrame(float dt);
+            void onFrame(float dt) override;
 
             void pickUpObject (MWWorld::Ptr object);
 
@@ -69,7 +69,7 @@ namespace MWGui
 
             void adjustCategoryHeader();
 
-            void clear();
+            void clear() override;
 
             void useItem(const MWWorld::Ptr& ptr, bool force=false);
 
@@ -81,7 +81,7 @@ namespace MWGui
             void cycle(bool next);
 
         protected:
-            virtual void onTitleDoubleClicked();
+            void onTitleDoubleClicked() override;
 
         private:
             DragAndDrop* mDragAndDrop;
@@ -170,7 +170,7 @@ namespace MWGui
             void onNameFilterChanged(MyGUI::EditBox* _sender);
             void onAvatarClicked(MyGUI::Widget* _sender);
             void onAvatarToggled(MyGUI::Widget* _sender);
-            void onPinToggled();
+            void onPinToggled() override;
 
             void notifyContentChanged();
             void dirtyPreview();

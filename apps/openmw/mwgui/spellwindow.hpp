@@ -26,7 +26,7 @@ namespace MWGui
 
         void updateSpells();
 
-        void onFrame(float dt);
+        void onFrame(float dt) override;
 
         /// Cycle to next/previous spell
         void cycle(bool next);
@@ -53,9 +53,9 @@ namespace MWGui
         void onFilterChanged(MyGUI::ComboBox* _sender, size_t _index);
         void onFilterEdited(MyGUI::EditBox* _sender);
 
-        virtual void onPinToggled();
-        virtual void onTitleDoubleClicked();
-        virtual void onOpen();
+        void onPinToggled() override;
+        void onTitleDoubleClicked() override;
+        void onOpen() override;
 
         SpellView* mSpellView;
         SpellIcons* mSpellIcons;

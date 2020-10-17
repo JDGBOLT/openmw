@@ -228,7 +228,7 @@ namespace
             mTopicsMode = false;
         }
 
-        void onOpen()
+        void onOpen() override
         {
             if (!MWBase::Environment::get().getWindowManager ()->getJournalAllowed ())
             {
@@ -259,7 +259,7 @@ namespace
             MWBase::Environment::get().getWindowManager()->setKeyFocusWidget(getWidget<MyGUI::Widget>(CloseBTN));
         }
 
-        void onClose()
+        void onClose() override
         {
             mModel->unload ();
 
@@ -272,7 +272,7 @@ namespace
             mTopicIndexBook.reset ();
         }
 
-        void setVisible (bool newValue)
+        void setVisible (bool newValue) override
         {
             WindowBase::setVisible (newValue);
         }

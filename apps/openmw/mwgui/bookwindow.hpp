@@ -18,10 +18,10 @@ namespace MWGui
         public:
             BookWindow(Resource::ResourceSystem* resourceSystem);
 
-            void setPtr(const MWWorld::Ptr& book);
+            void setPtr(const MWWorld::Ptr& book) override;
             void setInventoryAllowed(bool allowed);
 
-            void onResChange(int, int) { center(); }
+            void onResChange(int, int) override { center(); }
 
         protected:
             void onNextPageButtonClicked (MyGUI::Widget* sender);

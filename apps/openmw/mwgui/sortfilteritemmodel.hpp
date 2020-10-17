@@ -10,13 +10,13 @@ namespace MWGui
     public:
         SortFilterItemModel (ItemModel* sourceModel);
 
-        virtual void update();
+        void update() override;
 
         bool filterAccepts (const ItemStack& item);
 
-        bool allowedToUseItems() const;
-        virtual ItemStack getItem (ModelIndex index);
-        virtual size_t getItemCount();
+        bool allowedToUseItems() const override;
+        ItemStack getItem (ModelIndex index) override;
+        size_t getItemCount() override;
 
         /// Dragged items are not displayed.
         void addDragItem (const MWWorld::Ptr& dragItem, size_t count);
@@ -36,9 +36,9 @@ namespace MWGui
         /// Use ItemStack::Type for sorting?
         void setSortByType(bool sort) { mSortByType = sort; }
 
-        void onClose();
-        bool onDropItem(const MWWorld::Ptr &item, int count);
-        bool onTakeItem(const MWWorld::Ptr &item, int count);
+        void onClose() override;
+        bool onDropItem(const MWWorld::Ptr &item, int count) override;
+        bool onTakeItem(const MWWorld::Ptr &item, int count) override;
 
         void updateSort(); 
 
